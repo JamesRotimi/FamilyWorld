@@ -6,12 +6,15 @@
 const TILE_W = 88;
 const TILE_H = 44;
 
-/* World layout — a 2×2 plan of rooms, each 4×4 tiles. */
+/* World layout — 5 zones on an 8×8 isometric grid.
+   labelAnchor is one of "top" | "right" | "bottom" | "left", placing the label
+   just outside that iso corner of the zone so it never sits on objects. */
 const ROOMS = [
-  { id: "living",  name: "Living Room", x0: 0, y0: 0, x1: 3, y1: 3, color: "var(--living)",  edge: "var(--living-edge)",  labelOffset: { x: 0,   y: -22 } },
-  { id: "kids",    name: "Kid's Room",  x0: 4, y0: 0, x1: 7, y1: 3, color: "var(--kids)",    edge: "var(--kids-edge)",    labelOffset: { x: 0,   y: -22 } },
-  { id: "kitchen", name: "Kitchen",     x0: 0, y0: 4, x1: 3, y1: 7, color: "var(--kitchen)", edge: "var(--kitchen-edge)", labelOffset: { x: -10, y: 8 } },
-  { id: "garage",  name: "Garage",      x0: 4, y0: 4, x1: 7, y1: 7, color: "var(--garage)",  edge: "var(--garage-edge)",  labelOffset: { x: 10,  y: 8 } },
+  { id: "living",   name: "Living Room", x0: 0, y0: 0, x1: 3, y1: 3, color: "var(--living)",   edge: "var(--living-edge)",   labelAnchor: "top" },
+  { id: "kids",     name: "Kid's Room",  x0: 4, y0: 0, x1: 7, y1: 3, color: "var(--kids)",     edge: "var(--kids-edge)",     labelAnchor: "top" },
+  { id: "kitchen",  name: "Kitchen",     x0: 0, y0: 4, x1: 3, y1: 7, color: "var(--kitchen)",  edge: "var(--kitchen-edge)",  labelAnchor: "left" },
+  { id: "outdoor",  name: "Outdoor",     x0: 4, y0: 4, x1: 5, y1: 7, color: "var(--outdoor)",  edge: "var(--outdoor-edge)",  labelAnchor: "bottom" },
+  { id: "docs",     name: "Documents",   x0: 6, y0: 4, x1: 7, y1: 7, color: "var(--docs)",     edge: "var(--docs-edge)",     labelAnchor: "right" },
 ];
 
 /* Mock objects — each one is a real-life thing FamilyWorld remembers. */
@@ -118,7 +121,7 @@ const SEED_OBJECTS = [
     id: "car-1",
     name: "Family Car",
     glyph: "🚗",
-    room: "garage",
+    room: "outdoor",
     pos: { x: 5, y: 5 },
     category: "Vehicle",
     bought: { date: "06 Apr 2022", from: "Arnold Clark", price: "£18,500" },
@@ -134,8 +137,8 @@ const SEED_OBJECTS = [
     id: "tools-1",
     name: "Tool Cabinet",
     glyph: "🧰",
-    room: "garage",
-    pos: { x: 7, y: 6 },
+    room: "outdoor",
+    pos: { x: 4, y: 7 },
     category: "Equipment",
     bought: { date: "19 Aug 2023", from: "B&Q", price: "£140" },
     warranty: { startsISO: "2023-08-19", endsISO: "2025-08-19" },
@@ -146,8 +149,8 @@ const SEED_OBJECTS = [
     id: "passport-1",
     name: "Family Documents",
     glyph: "📁",
-    room: "living",
-    pos: { x: 3, y: 3 },
+    room: "docs",
+    pos: { x: 7, y: 5 },
     category: "Documents",
     bought: { date: "—", from: "—", price: "—" },
     warranty: null,
@@ -164,7 +167,12 @@ const SEED_OBJECTS = [
 const state = {
   objects: deepCopy(SEED_OBJECTS),
   selectedId: null,
+  recentId: "bike-1",
+  expandedRooms: new Set(),
+  searchQuery: "",
 };
+
+const HERO_LIMIT = 2;
 
 function deepCopy(v) { return JSON.parse(JSON.stringify(v)); }
 
@@ -214,25 +222,108 @@ function renderWorld() {
     }
   }
 
-  // 2. Room labels (centered over each room)
+  // 2. Floating room labels — placed just outside each zone, never behind objects
   for (const room of ROOMS) {
-    const cx = (room.x0 + room.x1) / 2;
-    const cy = (room.y0 + room.y1) / 2;
     const label = document.createElement("div");
     label.className = "room-label";
     label.textContent = room.name;
-    placeAt(label, cx, cy, room.labelOffset.x, room.labelOffset.y);
-    // shift so text is centered, not left-aligned
+
+    let cx, cy, dx = 0, dy = 0;
+    switch (room.labelAnchor) {
+      case "top":
+        cx = room.x0 + 0.5; cy = room.y0 + 0.5; dy = -50; break;
+      case "bottom":
+        cx = room.x1 + 0.5; cy = room.y1 + 0.5; dy = 50; break;
+      case "left":
+        cx = room.x0 + 0.5; cy = room.y1 + 0.5; dx = -36; dy = 8; break;
+      case "right":
+        cx = room.x1 + 0.5; cy = room.y0 + 0.5; dx = 36; dy = 8; break;
+      default:
+        cx = (room.x0 + room.x1) / 2 + 0.5; cy = (room.y0 + room.y1) / 2 + 0.5;
+    }
+    placeAt(label, cx, cy, dx, dy);
     label.style.transform = "translate(-50%, -50%)";
     worldEl.appendChild(label);
   }
 
-  // 3. Objects, depth-sorted (front = larger x+y)
-  const sorted = [...state.objects].sort((a, b) => (a.pos.x + a.pos.y) - (b.pos.x + b.pos.y));
+  // 3. Decide which objects are visible (heroes) and which are collapsed.
+  const objectsByRoom = new Map();
+  for (const room of ROOMS) objectsByRoom.set(room.id, []);
+  for (const obj of state.objects) {
+    if (objectsByRoom.has(obj.room)) objectsByRoom.get(obj.room).push(obj);
+  }
+
+  const visible = [];
+  for (const room of ROOMS) {
+    const items = rankRoomItems(objectsByRoom.get(room.id) || []);
+    const expanded = state.expandedRooms.has(room.id);
+    const heroes = expanded ? items : items.slice(0, HERO_LIMIT);
+    const hidden = expanded ? [] : items.slice(HERO_LIMIT);
+
+    for (const obj of heroes) visible.push(obj);
+
+    if (hidden.length > 0) {
+      const anchor = heroes[heroes.length - 1] || items[0];
+      const pill = createMoreEl(room, hidden.length, anchor);
+      worldEl.appendChild(pill);
+    } else if (expanded && items.length > HERO_LIMIT) {
+      const anchor = items[items.length - 1];
+      const pill = createCollapseEl(room, anchor);
+      worldEl.appendChild(pill);
+    }
+  }
+
+  // 4. Objects, depth-sorted (front = larger x+y)
+  const sorted = visible.sort((a, b) => (a.pos.x + a.pos.y) - (b.pos.x + b.pos.y));
   for (const obj of sorted) {
     const el = createObjectEl(obj);
     worldEl.appendChild(el);
   }
+}
+
+/* Importance ranking — items with urgent reminders first, then by reminder count, then by name. */
+function rankRoomItems(items) {
+  const score = (o) => {
+    const r = o.reminders || [];
+    return r.filter(x => x.urgent).length * 100 + r.length * 10;
+  };
+  return [...items].sort((a, b) => {
+    const d = score(b) - score(a);
+    return d !== 0 ? d : a.name.localeCompare(b.name);
+  });
+}
+
+function createMoreEl(room, count, anchor) {
+  const el = document.createElement("button");
+  el.className = "more-pill";
+  el.type = "button";
+  el.textContent = `+${count}`;
+  el.title = `Show ${count} more in ${room.name}`;
+  el.setAttribute("aria-label", el.title);
+  // Place near the anchor object (slightly up and to the right)
+  placeAt(el, anchor.pos.x + 0.5, anchor.pos.y + 0.5, 32, -52);
+  el.addEventListener("click", (e) => {
+    e.stopPropagation();
+    state.expandedRooms.add(room.id);
+    renderWorld();
+  });
+  return el;
+}
+
+function createCollapseEl(room, anchor) {
+  const el = document.createElement("button");
+  el.className = "more-pill is-collapse";
+  el.type = "button";
+  el.textContent = "−";
+  el.title = `Collapse ${room.name}`;
+  el.setAttribute("aria-label", el.title);
+  placeAt(el, anchor.pos.x + 0.5, anchor.pos.y + 0.5, 32, -52);
+  el.addEventListener("click", (e) => {
+    e.stopPropagation();
+    state.expandedRooms.delete(room.id);
+    renderWorld();
+  });
+  return el;
 }
 
 function createObjectEl(obj) {
@@ -278,22 +369,26 @@ const panelEl = document.getElementById("panel");
 const panelBody = document.getElementById("panelBody");
 
 function selectObject(id) {
-  state.selectedId = id;
   const obj = state.objects.find(o => o.id === id);
   if (!obj) return;
+  state.selectedId = id;
+  state.recentId = id;
 
   hideHint();
   renderPanel(obj);
   panelEl.classList.add("open");
   panelEl.setAttribute("aria-hidden", "false");
+  panelScrim.classList.add("show");
 
-  // re-render world to show selection ring
+  // re-render world to show selection ring, and refresh the recent strip
   renderWorld();
+  renderRecent();
 }
 
 function closePanel() {
   panelEl.classList.remove("open");
   panelEl.setAttribute("aria-hidden", "true");
+  panelScrim.classList.remove("show");
   state.selectedId = null;
   renderWorld();
 }
@@ -532,17 +627,119 @@ function escapeHtml(s) {
     .replace(/'/g, "&#39;");
 }
 
+/* ---------- Search ---------- */
+
+const searchInput = document.getElementById("searchInput");
+const searchResults = document.getElementById("searchResults");
+
+function runSearch(q) {
+  state.searchQuery = q;
+  const query = q.trim().toLowerCase();
+  if (!query) {
+    searchResults.hidden = true;
+    searchResults.innerHTML = "";
+    return;
+  }
+  const matches = state.objects.filter(o => {
+    return o.name.toLowerCase().includes(query)
+      || o.category.toLowerCase().includes(query)
+      || (o.notes || "").toLowerCase().includes(query)
+      || roomName(o.room).toLowerCase().includes(query);
+  }).slice(0, 6);
+
+  if (matches.length === 0) {
+    searchResults.innerHTML = `<div class="search-empty">No items match “${escapeHtml(q)}”.</div>`;
+  } else {
+    searchResults.innerHTML = matches.map(o => `
+      <button class="search-result" type="button" data-id="${o.id}">
+        <span class="search-result-glyph">${o.glyph}</span>
+        <span class="search-result-text">
+          <span class="search-result-name">${escapeHtml(o.name)}</span>
+          <span class="search-result-meta">${escapeHtml(o.category)} · ${escapeHtml(roomName(o.room))}</span>
+        </span>
+      </button>
+    `).join("");
+    searchResults.querySelectorAll(".search-result").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.id;
+        clearSearch();
+        selectObject(id);
+      });
+    });
+  }
+  searchResults.hidden = false;
+}
+
+function clearSearch() {
+  searchInput.value = "";
+  state.searchQuery = "";
+  searchResults.hidden = true;
+  searchResults.innerHTML = "";
+}
+
+/* ---------- Recent strip ---------- */
+
+const recentTrack = document.getElementById("recentTrack");
+
+function recentSummary(obj) {
+  const r = (obj.reminders || []).find(x => !!x);
+  if (r) {
+    const text = r.text.replace(/\s+\(.*\)$/, "");
+    const short = text.length > 36 ? text.slice(0, 33) + "…" : text;
+    return `${short} · ${r.when}`;
+  }
+  if (obj.warranty) return `Warranty ${formatISO(obj.warranty.endsISO)}`;
+  return `${obj.category} · ${roomName(obj.room)}`;
+}
+
+function renderRecent() {
+  const obj = state.objects.find(o => o.id === state.recentId);
+  if (!obj) {
+    recentTrack.innerHTML = "";
+    return;
+  }
+  recentTrack.innerHTML = `
+    <button class="recent-chip" type="button" data-id="${obj.id}">
+      <span class="recent-chip-glyph">${obj.glyph}</span>
+      <span class="recent-chip-text">
+        <span class="recent-chip-name">${escapeHtml(obj.name)}</span>
+        <span class="recent-chip-sub">${escapeHtml(recentSummary(obj))}</span>
+      </span>
+    </button>
+  `;
+  recentTrack.querySelector(".recent-chip").addEventListener("click", () => {
+    selectObject(obj.id);
+  });
+}
+
 /* ---------- Wire up ---------- */
+
+const panelScrim = document.getElementById("panelScrim");
 
 document.getElementById("addBtn").addEventListener("click", openModal);
 document.getElementById("modalClose").addEventListener("click", closeModal);
 document.getElementById("panelClose").addEventListener("click", closePanel);
+panelScrim.addEventListener("click", closePanel);
 document.getElementById("resetBtn").addEventListener("click", () => {
   state.objects = deepCopy(SEED_OBJECTS);
   state.selectedId = null;
+  state.recentId = "bike-1";
+  state.expandedRooms = new Set();
+  clearSearch();
   closePanel();
   renderWorld();
+  renderRecent();
   showToast("World reset");
+});
+
+searchInput.addEventListener("input", (e) => runSearch(e.target.value));
+searchInput.addEventListener("focus", () => {
+  if (searchInput.value.trim()) runSearch(searchInput.value);
+});
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".search-wrap")) {
+    searchResults.hidden = true;
+  }
 });
 
 modalEl.addEventListener("click", (e) => {
@@ -552,8 +749,10 @@ modalEl.addEventListener("click", (e) => {
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     if (modalEl.classList.contains("open")) closeModal();
+    else if (!searchResults.hidden) clearSearch();
     else if (panelEl.classList.contains("open")) closePanel();
   }
 });
 
 renderWorld();
+renderRecent();

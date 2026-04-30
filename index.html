@@ -18,7 +18,7 @@
       </div>
       <div class="brand-text">
         <h1>FamilyWorld</h1>
-        <p>A warm, living map of your family's things.</p>
+        <p>A living map of your family's things, documents and reminders.</p>
       </div>
     </div>
     <div class="topbar-actions">
@@ -28,6 +28,25 @@
       </button>
     </div>
   </header>
+
+  <section class="utility" aria-label="Find items">
+    <div class="search-wrap">
+      <span class="search-icon" aria-hidden="true">⌕</span>
+      <input
+        id="searchInput"
+        class="search-input"
+        type="search"
+        placeholder="Search family items…"
+        autocomplete="off"
+        aria-label="Search family items"
+      />
+      <div class="search-results" id="searchResults" hidden></div>
+    </div>
+    <div class="recent-strip" id="recentStrip" aria-label="Recent items">
+      <span class="recent-label">Recent</span>
+      <div class="recent-track" id="recentTrack"></div>
+    </div>
+  </section>
 
   <main class="stage">
     <div class="stage-sky" aria-hidden="true">
@@ -51,9 +70,11 @@
 
   <!-- Info panel (slides in from right on desktop, up from bottom on mobile) -->
   <aside class="panel" id="panel" aria-hidden="true">
+    <div class="panel-grab" aria-hidden="true"></div>
     <button class="panel-close" id="panelClose" type="button" aria-label="Close">✕</button>
     <div class="panel-body" id="panelBody"></div>
   </aside>
+  <div class="panel-scrim" id="panelScrim" aria-hidden="true"></div>
 
   <!-- Add modal -->
   <div class="modal-backdrop" id="modal" aria-hidden="true">
