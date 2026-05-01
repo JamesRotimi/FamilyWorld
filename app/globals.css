@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    min-height: 100%;
+    background:
+      radial-gradient(1200px 700px at 50% -10%, #fbf7ec 0%, rgba(251, 247, 236, 0) 60%),
+      linear-gradient(180deg, #f8f3e8 0%, #f3ecdc 100%);
+    color: #2a2724;
+    letter-spacing: -0.005em;
+  }
+}
+
+/* Isometric tile shape — kept in CSS because clip-path is awkward in Tailwind. */
+.tile-shape {
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+/* World platform with diorama feel. */
+.world-platform {
+  background:
+    radial-gradient(ellipse 60% 45% at 50% 60%, rgba(255, 245, 225, 0.9) 0%, rgba(255, 245, 225, 0) 70%),
+    linear-gradient(180deg, #fbf6ea 0%, #f4ecd9 100%);
+}
+.world-platform::after {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 24px;
+  height: 28px;
+  background: radial-gradient(ellipse at center, rgba(50, 35, 20, 0.1) 0%, rgba(50, 35, 20, 0) 70%);
+  filter: blur(8px);
+  pointer-events: none;
+  z-index: -1;
+}
