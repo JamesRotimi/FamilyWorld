@@ -64,7 +64,7 @@
 
     <div class="hint" id="hint">
       <span class="hint-dot"></span>
-      Tap any object to see what FamilyWorld remembers about it.
+      Click <strong>+ Add to World</strong> to place Noah's Bike, or tap any item to see details.
     </div>
   </main>
 
@@ -81,8 +81,14 @@
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <button class="modal-close" id="modalClose" type="button" aria-label="Close">✕</button>
       <h2 id="modalTitle">Add something to your world</h2>
-      <p class="modal-sub">Pick an item — we'll pretend to scan a receipt.</p>
-      <div class="preset-grid" id="presetGrid"></div>
+      <p class="modal-sub">In the real product, this would let you scan a receipt or document. For this prototype, we'll add the bike example.</p>
+
+      <div class="modal-actions" id="modalActions">
+        <button class="ghost-btn" id="cancelBtn" type="button">Cancel</button>
+        <button class="primary-btn" id="confirmBtn" type="button">
+          <span class="plus" aria-hidden="true">🚲</span> Add Noah's Bike
+        </button>
+      </div>
 
       <div class="scanning" id="scanning" hidden>
         <div class="receipt">
