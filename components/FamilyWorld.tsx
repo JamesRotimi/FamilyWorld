@@ -46,10 +46,10 @@ export default function FamilyWorld({
   );
 
   return (
-    <div className="relative z-[1] mx-auto mt-2 flex max-w-[1080px] justify-center rounded-[32px] world-platform px-8 pb-16 pt-14 shadow-platform">
+    <div className="relative z-[1] mx-auto mt-2 flex max-w-[1080px] justify-center overflow-hidden rounded-[32px] world-platform px-8 pb-16 pt-14 shadow-platform max-md:px-3 max-md:pt-10 max-md:pb-12">
       <div
-        className="relative mx-auto"
-        style={{ width: 880, height: 620, transform: "scale(1.06)", transformOrigin: "top center" }}
+        className="relative mx-auto origin-top scale-[1.06] max-lg:scale-[0.82] max-md:scale-[0.62] max-sm:scale-[0.46]"
+        style={{ width: 880, height: 620 }}
       >
         {/* Tiles */}
         {zones.flatMap((zone) => {
