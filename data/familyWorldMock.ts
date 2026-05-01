@@ -30,6 +30,7 @@ export type FamilyItem = {
   warranty?: Warranty;
   colour?: string;
   receiptStatus?: string;
+  serial?: string;
   reminder?: Reminder;
   notes?: string;
   /**
@@ -38,6 +39,24 @@ export type FamilyItem = {
    * not just "coming soon".
    */
   preview?: string;
+};
+
+/** Editable confirmation form passed from the Add modal to the AppShell.
+ *  All fields are strings (or ZoneId) so the form layer can stay simple. */
+export type ConfirmForm = {
+  name: string;
+  category: string;
+  zone: ZoneId;
+  purchaseDateISO: string; // "YYYY-MM-DD"
+  price: string;
+  from: string;
+  colour: string;
+  receipt: string;
+  serial: string;
+  reminder: string;
+  glyph: string;
+  warrantyYears?: number;
+  notes?: string;
 };
 
 export type ZoneId = "home" | "child" | "docs" | "outdoor";
@@ -167,6 +186,7 @@ export const initialItems: FamilyItem[] = [
     glyph: "🚲",
     colour: "Blue",
     receiptStatus: "Stored",
+    serial: "Mock serial stored",
     purchaseDate: "12 Feb 2026",
     purchasedFrom: "Halfords",
     price: "£189",
