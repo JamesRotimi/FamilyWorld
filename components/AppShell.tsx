@@ -42,7 +42,11 @@ export default function AppShell() {
       const item = items.find((i) => i.id === id);
       if (!item) return;
       if (item.status === "coming-soon") {
-        showToast(`${item.name} — coming soon`);
+        showToast(
+          item.preview
+            ? `Coming soon — ${item.preview}`
+            : `${item.name} — coming soon`,
+        );
         return;
       }
       setSelectedId(id);

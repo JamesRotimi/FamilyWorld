@@ -32,6 +32,12 @@ export type FamilyItem = {
   receiptStatus?: string;
   reminder?: Reminder;
   notes?: string;
+  /**
+   * Short, warm description of what an inactive zone will eventually do.
+   * Surfaces in the hover/tap preview so the placeholder is informative,
+   * not just "coming soon".
+   */
+  preview?: string;
 };
 
 export type ZoneId = "home" | "child" | "docs" | "outdoor";
@@ -103,36 +109,36 @@ export const initialItems: FamilyItem[] = [
   },
   {
     id: "house-1",
-    name: "House",
+    name: "Home docs & bills",
     type: "Home",
     zone: "home",
     status: "coming-soon",
     placed: true,
     position: { x: 1, y: 1 },
     glyph: "🏠",
-    notes: "Home items and rooms — coming soon.",
+    preview: "Track bills, insurance and home documents",
   },
   {
     id: "vault-1",
-    name: "Document Vault",
+    name: "Family vault",
     type: "Documents",
     zone: "docs",
     status: "coming-soon",
     placed: true,
     position: { x: 1, y: 5 },
     glyph: "🗄️",
-    notes: "Passports, certificates and important papers — coming soon.",
+    preview: "Store passports, certificates and family records",
   },
   {
     id: "car-1",
-    name: "Car",
+    name: "Car service & MOT",
     type: "Vehicle",
     zone: "outdoor",
     status: "coming-soon",
     placed: true,
     position: { x: 5, y: 5 },
     glyph: "🚗",
-    notes: "MOT, insurance and service reminders — coming soon.",
+    preview: "Manage MOT, servicing and car reminders",
   },
 ];
 
