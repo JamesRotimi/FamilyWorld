@@ -21,18 +21,19 @@ const ROOMS = [
 const SEED_OBJECTS = [
   {
     id: "bike-1",
-    name: "Sam's Bike",
+    name: "Noah's Bike",
     glyph: "🚲",
     room: "kids",
     pos: { x: 5, y: 1 },
-    category: "Outdoor",
-    bought: { date: "12 Jun 2025", from: "Halfords", price: "£189" },
-    warranty: { startsISO: "2025-06-12", endsISO: "2027-06-12" },
+    category: "Child / Equipment",
+    colour: "Blue",
+    receipt: "Stored",
+    bought: { date: "12 Feb 2026", from: "Halfords", price: "£189" },
+    warranty: { startsISO: "2026-02-12", endsISO: "2027-11-12", remainingText: "18 months remaining" },
     reminders: [
-      { when: "Jun 2026", text: "Annual bike service due", urgent: false },
-      { when: "Dec 2026", text: "Sam may have outgrown this — try the lending scheme", urgent: false },
+      { when: "Nov 2026", text: "Check size/replacement in 6 months", urgent: false },
     ],
-    notes: "Blue mountain bike, frame size M. Insurance bundled with home policy.",
+    notes: "Mock data for prototype only.",
   },
   {
     id: "hoover-1",
@@ -397,6 +398,7 @@ function renderPanel(obj) {
   const w = obj.warranty;
   const warrantyPct = w ? warrantyPercentRemaining(w) : null;
   const warrantyEnds = w ? formatISO(w.endsISO) : null;
+  const warrantyRemaining = w ? (w.remainingText || `${warrantyPct}% of cover remaining`) : null;
 
   const remindersHtml = (obj.reminders && obj.reminders.length)
     ? obj.reminders.map(r => `
@@ -417,9 +419,36 @@ function renderPanel(obj) {
           <div class="k">Ends</div>
           <div class="v">${escapeHtml(warrantyEnds)}</div>
           <div class="warranty-bar"><div class="warranty-bar-fill" style="width:${warrantyPct}%"></div></div>
-          <div class="k" style="margin-top:6px">${warrantyPct}% of cover remaining</div>
+          <div class="k" style="margin-top:6px">${escapeHtml(warrantyRemaining)}</div>
         </div>
       </div>` : "";
+
+  const detailRows = [
+    { k: "Category", v: obj.category },
+    obj.colour ? { k: "Colour", v: obj.colour } : null,
+    obj.receipt ? { k: "Receipt", v: obj.receipt } : null,
+  ].filter(Boolean);
+
+  const detailsHtml = `
+    <div class="panel-section">
+      <h4>Details</h4>
+      <div class="kv-grid">
+        ${detailRows.map(r => `
+          <div class="kv"><div class="k">${escapeHtml(r.k)}</div><div class="v">${escapeHtml(r.v)}</div></div>
+        `).join("")}
+      </div>
+    </div>`;
+
+  const ctaHtml = `
+    <div class="panel-cta">
+      <button class="cta-btn cta-primary" type="button" data-cta="add-reminder">
+        <span class="cta-icon">+</span> Add reminder
+      </button>
+      ${obj.receipt ? `
+        <button class="cta-btn cta-secondary" type="button" data-cta="view-receipt">
+          <span class="cta-icon">⌕</span> View receipt
+        </button>` : ""}
+    </div>`;
 
   panelBody.innerHTML = `
     <div class="panel-hero">
@@ -436,9 +465,10 @@ function renderPanel(obj) {
         <div class="kv"><div class="k">When</div><div class="v">${escapeHtml(obj.bought.date)}</div></div>
         <div class="kv"><div class="k">From</div><div class="v">${escapeHtml(obj.bought.from)}</div></div>
         <div class="kv"><div class="k">Price</div><div class="v">${escapeHtml(obj.bought.price)}</div></div>
-        <div class="kv"><div class="k">Category</div><div class="v">${escapeHtml(obj.category)}</div></div>
       </div>
     </div>
+
+    ${detailsHtml}
 
     ${warrantyHtml}
 
@@ -447,11 +477,18 @@ function renderPanel(obj) {
       ${remindersHtml}
     </div>
 
-    <div class="panel-section">
-      <h4>Notes</h4>
-      <div class="notes">${escapeHtml(obj.notes || "—")}</div>
-    </div>
+    ${ctaHtml}
+
+    <div class="panel-foot">${escapeHtml(obj.notes || "Mock data for prototype only.")}</div>
   `;
+
+  panelBody.querySelectorAll("[data-cta]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const kind = btn.dataset.cta;
+      if (kind === "add-reminder") showToast("Reminder added (mock)");
+      else if (kind === "view-receipt") showToast("Receipt preview is mocked for V1");
+    });
+  });
 }
 
 function warrantyPercentRemaining(w) {
@@ -476,9 +513,13 @@ function roomName(id) {
 /* ---------- Add modal ---------- */
 
 const PRESETS = [
-  { name: "Mountain Bike",  glyph: "🚲",  room: "kids",    category: "Outdoor",   warrantyYears: 2,
-    reminders: [{ when: "+12 months", text: "Annual service due", urgent: false }],
-    notes: "Receipt scanned. Insurance bundled with home policy." },
+  { name: "Noah's Bike", glyph: "🚲", room: "kids", category: "Child / Equipment",
+    bought: { date: "12 Feb 2026", from: "Halfords", price: "£189" },
+    warranty: { startsISO: "2026-02-12", endsISO: "2027-11-12", remainingText: "18 months remaining" },
+    colour: "Blue",
+    receipt: "Stored",
+    reminders: [{ when: "Nov 2026", text: "Check size/replacement in 6 months", urgent: false }],
+    notes: "Mock data for prototype only." },
   { name: "Vacuum Cleaner", glyph: "🧹",  room: "living",  category: "Appliance", warrantyYears: 5,
     reminders: [{ when: "+6 months", text: "Replacement filter due", urgent: false }],
     notes: "Cordless model. Dock under stairs." },
@@ -557,6 +598,16 @@ function spawnFromPreset(preset) {
   const ends = new Date(today);
   ends.setFullYear(ends.getFullYear() + (preset.warrantyYears || 0));
 
+  const fallbackBought = {
+    date: today.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+    from: "Scanned receipt",
+    price: ["£" + (49 + Math.floor(Math.random() * 350)), "£" + (199 + Math.floor(Math.random() * 600))][Math.random() < 0.5 ? 0 : 1],
+  };
+  const fallbackWarranty = preset.warrantyYears > 0 ? {
+    startsISO: today.toISOString().slice(0, 10),
+    endsISO: ends.toISOString().slice(0, 10),
+  } : null;
+
   const newObj = {
     id: "obj-" + Math.random().toString(36).slice(2, 8),
     name: preset.name,
@@ -564,15 +615,10 @@ function spawnFromPreset(preset) {
     room: preset.room,
     pos,
     category: preset.category,
-    bought: {
-      date: today.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-      from: "Scanned receipt",
-      price: ["£" + (49 + Math.floor(Math.random() * 350)), "£" + (199 + Math.floor(Math.random() * 600))][Math.random() < 0.5 ? 0 : 1],
-    },
-    warranty: preset.warrantyYears > 0 ? {
-      startsISO: today.toISOString().slice(0, 10),
-      endsISO: ends.toISOString().slice(0, 10),
-    } : null,
+    colour: preset.colour,
+    receipt: preset.receipt,
+    bought: preset.bought || fallbackBought,
+    warranty: preset.warranty || fallbackWarranty,
     reminders: preset.reminders,
     notes: preset.notes,
     _spawning: true,

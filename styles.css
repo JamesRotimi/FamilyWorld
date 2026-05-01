@@ -807,6 +807,60 @@ button { font-family: inherit; }
   padding: 10px 12px;
 }
 
+.panel-cta {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+.cta-btn {
+  flex: 1 1 140px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 14px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  border: none;
+}
+.cta-btn .cta-icon {
+  font-size: 16px;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+.cta-primary {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 4px 0 var(--primary-shadow), 0 8px 18px rgba(200, 75, 34, 0.22);
+}
+.cta-primary:hover { transform: translateY(-1px); }
+.cta-primary:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 var(--primary-shadow);
+}
+.cta-secondary {
+  background: #fffdf8;
+  color: var(--ink);
+  border: 1.5px solid var(--line);
+}
+.cta-secondary:hover { border-color: var(--ink-soft); }
+
+.panel-foot {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
 @media (max-width: 720px) {
   .panel {
     top: auto;
