@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   initialItems,
   findEmptyTileInZone,
@@ -18,6 +18,9 @@ import AddItemModal from "./AddItemModal";
 import Toast from "./Toast";
 
 const SEED_IDS = new Set(initialItems.map((i) => i.id));
+const STORAGE_KEY = "familyworld:v1";
+
+type Persisted = { items: FamilyItem[]; recentId: string };
 
 export default function AppShell() {
   const [items, setItems] = useState<FamilyItem[]>(initialItems);
@@ -29,6 +32,36 @@ export default function AppShell() {
     signal: 0,
     message: "",
   });
+  /** Tracks whether we've finished hydrating from localStorage. We avoid
+   *  writing to storage before this point so the first render doesn't
+   *  overwrite an existing saved world. */
+  const [hydrated, setHydrated] = useState(false);
+
+  // Hydrate items + recentId from localStorage once on mount.
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<Persisted>;
+        if (Array.isArray(parsed.items)) setItems(parsed.items);
+        if (typeof parsed.recentId === "string") setRecentId(parsed.recentId);
+      }
+    } catch {
+      /* ignore — fall back to seed defaults */
+    }
+    setHydrated(true);
+  }, []);
+
+  // Persist on change. Skipped until after hydration.
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      const payload: Persisted = { items, recentId };
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    } catch {
+      /* ignore — quota / private mode */
+    }
+  }, [hydrated, items, recentId]);
 
   const selectedItem = useMemo(
     () => items.find((i) => i.id === selectedId) ?? null,
@@ -100,21 +133,25 @@ export default function AppShell() {
       };
 
       setItems((prev) => [...prev, newItem]);
-      finalisePlacement(id);
-    },
-    [items],
-  );
 
-  function finalisePlacement(id: string) {
-    setSpawningId(id);
-    setModalOpen(false);
-    showToast(`Added to your world`);
-    setTimeout(() => {
-      setSpawningId(null);
-      setSelectedId(id);
-      setRecentId(id);
-    }, 500);
-  }
+      // Behaviours from the spec, all on local state:
+      //   1) item is added to React state above
+      //   2) it's placed visually because placed:true + position is set
+      //   3) Recent strip updates via setRecentId below
+      //   4) it's clickable in the world (IsometricObject is a button)
+      //   5) the detail drawer opens via setSelectedId below
+      //   6) toast uses the item's actual name
+      setSpawningId(newItem.id);
+      setModalOpen(false);
+      showToast(`${newItem.name} added to your world`);
+      setTimeout(() => {
+        setSpawningId(null);
+        setSelectedId(newItem.id);
+        setRecentId(newItem.id);
+      }, 500);
+    },
+    [items, showToast],
+  );
 
   /** Remove a placed item. Seeded items get unplaced (Reset can restore
    *  them); user-added items are deleted from state. */
@@ -143,6 +180,11 @@ export default function AppShell() {
   );
 
   const handleReset = useCallback(() => {
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
     setItems(initialItems);
     setSelectedId(null);
     setRecentId(DEFAULT_RECENT_ID);
