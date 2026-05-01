@@ -6,6 +6,7 @@ import {
   DEFAULT_RECENT_ID,
   type FamilyItem,
 } from "@/data/familyWorldMock";
+import BrowserFrame from "./BrowserFrame";
 import InfoPanel from "./InfoPanel";
 import FamilyWorld from "./FamilyWorld";
 import ObjectDetailDrawer from "./ObjectDetailDrawer";
@@ -17,7 +18,6 @@ export default function AppShell() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [recentId, setRecentId] = useState<string>(DEFAULT_RECENT_ID);
   const [modalOpen, setModalOpen] = useState(false);
-  const [hintGone, setHintGone] = useState(false);
   const [spawningId, setSpawningId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ signal: number; message: string }>({
     signal: 0,
@@ -51,7 +51,6 @@ export default function AppShell() {
       }
       setSelectedId(id);
       setRecentId(id);
-      setHintGone(true);
     },
     [items, showToast],
   );
@@ -70,14 +69,11 @@ export default function AppShell() {
 
     setModalOpen(false);
 
-    // Open drawer once the spawn animation has had time to play (or
-    // immediately if the bike was already placed).
     setTimeout(
       () => {
         setSpawningId(null);
         setSelectedId("bike-1");
         setRecentId("bike-1");
-        setHintGone(true);
       },
       wasAlreadyPlaced ? 0 : 500,
     );
@@ -87,21 +83,21 @@ export default function AppShell() {
     setItems(initialItems);
     setSelectedId(null);
     setRecentId(DEFAULT_RECENT_ID);
-    setHintGone(false);
     setSpawningId(null);
     showToast("World reset");
   }, [showToast]);
 
   return (
-    <>
-      <header className="relative z-[5] flex items-center justify-between gap-4 px-7 py-4 max-md:flex-wrap max-md:gap-2.5 max-md:px-4 max-md:py-3.5">
+    <BrowserFrame>
+      {/* Identity bar inside the frame: brand + tagline + buttons. */}
+      <div className="flex items-center justify-between gap-4 border-b border-ink-line/15 px-6 py-4 max-md:flex-wrap max-md:gap-2.5 max-md:px-4 lg:px-8">
         <div className="flex items-center gap-3.5">
           <BrandMark />
           <div>
-            <h1 className="font-display text-2xl font-semibold tracking-[-0.015em] text-ink">
+            <h1 className="font-display text-[22px] font-semibold tracking-[-0.015em] text-ink">
               FamilyWorld
             </h1>
-            <p className="mt-0.5 text-[13px] font-medium text-ink-soft max-[420px]:hidden">
+            <p className="mt-0.5 text-[12.5px] font-medium text-ink-soft max-[420px]:hidden">
               Receipts, warranties and reminders for everything your family owns.
             </p>
           </div>
@@ -112,7 +108,7 @@ export default function AppShell() {
             type="button"
             onClick={handleReset}
             title="Reset world"
-            className="rounded-full border border-line bg-surface px-4 py-2.5 text-sm font-semibold text-ink-soft transition hover:border-ink-mute hover:bg-white hover:text-ink"
+            className="rounded-full border border-ink-line/30 bg-surface px-4 py-2 text-[13px] font-semibold text-ink-soft transition hover:border-ink-mute hover:bg-white hover:text-ink"
           >
             Reset
           </button>
@@ -121,41 +117,28 @@ export default function AppShell() {
             onClick={() => setModalOpen(true)}
             title="Add to World"
             aria-label="Add to World"
-            className="inline-flex items-center gap-2 rounded-full bg-primary px-[18px] py-2.5 text-sm font-semibold text-white shadow-primary transition hover:-translate-y-0.5"
+            className="inline-flex items-center gap-2 rounded-full bg-primary px-[16px] py-2 text-[13px] font-semibold text-white shadow-primary transition hover:-translate-y-0.5"
           >
             <span className="text-base font-semibold leading-none">+</span> Add to World
           </button>
         </div>
-      </header>
+      </div>
 
-      <main className="relative min-h-[calc(100vh-90px)] px-6 pb-20 max-md:px-4 lg:px-7">
-        <div className="mx-auto flex max-w-[1240px] flex-col gap-6 lg:flex-row lg:items-start">
-          <InfoPanel
-            items={items}
-            recentItem={recentItem}
-            onSelect={handleSelect}
-          />
-          <div className="min-w-0 flex-1">
-            <FamilyWorld
-              items={items}
-              selectedId={selectedId}
-              spawningId={spawningId}
-              onSelect={handleSelect}
-            />
-            <div
-              className={`relative z-[2] mx-auto mt-5 flex max-w-[520px] items-center justify-center gap-2.5 rounded-full border border-line bg-surface px-4 py-2 text-[12.5px] font-medium text-ink-soft shadow-[0_1px_2px_rgba(50,35,20,0.03)] transition duration-300 ${
-                hintGone ? "pointer-events-none translate-y-2 opacity-0" : ""
-              }`}
-            >
-              <span
-                aria-hidden
-                className="h-[7px] w-[7px] flex-none animate-ping rounded-full bg-primary"
-              />
-              <span>Tap an object to see receipts, reminders and warranty details.</span>
-            </div>
-          </div>
-        </div>
-      </main>
+      {/* Main editorial spread: left guide column, right illustrated scene. */}
+      <div className="flex flex-col lg:flex-row lg:items-stretch">
+        <InfoPanel
+          items={items}
+          recentItem={recentItem}
+          onSelect={handleSelect}
+          onScan={() => setModalOpen(true)}
+        />
+        <FamilyWorld
+          items={items}
+          selectedId={selectedId}
+          spawningId={spawningId}
+          onSelect={handleSelect}
+        />
+      </div>
 
       <ObjectDetailDrawer
         item={selectedItem}
@@ -172,25 +155,25 @@ export default function AppShell() {
       />
 
       <Toast message={toast.message} signal={toast.signal || null} />
-    </>
+    </BrowserFrame>
   );
 }
 
 function BrandMark() {
   return (
-    <div aria-hidden className="relative h-11 w-11 flex-none">
+    <div aria-hidden className="relative h-10 w-10 flex-none">
       <span
         className="absolute left-1/2 top-1 -translate-x-1/2"
         style={{
           width: 0,
           height: 0,
-          borderLeft: "14px solid transparent",
-          borderRight: "14px solid transparent",
-          borderBottom: "14px solid #e07a4f",
+          borderLeft: "13px solid transparent",
+          borderRight: "13px solid transparent",
+          borderBottom: "13px solid #e07a4f",
         }}
       />
-      <span className="absolute bottom-1.5 left-1/2 h-5 w-6 -translate-x-1/2 rounded-md border-2 border-primary bg-surface">
-        <span className="absolute bottom-0 left-1/2 h-2 w-1.5 -translate-x-1/2 rounded-t-sm bg-primary" />
+      <span className="absolute bottom-1 left-1/2 h-[18px] w-5 -translate-x-1/2 rounded-md border-2 border-primary bg-surface">
+        <span className="absolute bottom-0 left-1/2 h-[7px] w-1.5 -translate-x-1/2 rounded-t-sm bg-primary" />
       </span>
     </div>
   );
