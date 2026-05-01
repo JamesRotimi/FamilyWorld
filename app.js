@@ -6,25 +6,28 @@
 const TILE_W = 88;
 const TILE_H = 44;
 
-/* World layout — 5 zones on an 8×8 isometric grid.
-   labelAnchor is one of "top" | "right" | "bottom" | "left", placing the label
-   just outside that iso corner of the zone so it never sits on objects. */
+/* World layout — 4 zones in a 2×2 plan, each 4×4 tiles. */
 const ROOMS = [
-  { id: "living",   name: "Living Room", x0: 0, y0: 0, x1: 3, y1: 3, color: "var(--living)",   edge: "var(--living-edge)",   labelAnchor: "top" },
-  { id: "kids",     name: "Kid's Room",  x0: 4, y0: 0, x1: 7, y1: 3, color: "var(--kids)",     edge: "var(--kids-edge)",     labelAnchor: "top" },
-  { id: "kitchen",  name: "Kitchen",     x0: 0, y0: 4, x1: 3, y1: 7, color: "var(--kitchen)",  edge: "var(--kitchen-edge)",  labelAnchor: "left" },
-  { id: "outdoor",  name: "Outdoor",     x0: 4, y0: 4, x1: 5, y1: 7, color: "var(--outdoor)",  edge: "var(--outdoor-edge)",  labelAnchor: "bottom" },
-  { id: "docs",     name: "Documents",   x0: 6, y0: 4, x1: 7, y1: 7, color: "var(--docs)",     edge: "var(--docs-edge)",     labelAnchor: "right" },
+  { id: "home",    name: "Home",       x0: 0, y0: 0, x1: 3, y1: 3, color: "var(--living)",   edge: "var(--living-edge)",   labelAnchor: "top" },
+  { id: "child",   name: "Child Zone", x0: 4, y0: 0, x1: 7, y1: 3, color: "var(--kids)",     edge: "var(--kids-edge)",     labelAnchor: "top" },
+  { id: "docs",    name: "Documents",  x0: 0, y0: 4, x1: 3, y1: 7, color: "var(--docs)",     edge: "var(--docs-edge)",     labelAnchor: "left" },
+  { id: "outdoor", name: "Outdoor",    x0: 4, y0: 4, x1: 7, y1: 7, color: "var(--outdoor)",  edge: "var(--outdoor-edge)",  labelAnchor: "right" },
 ];
 
-/* Mock objects — each one is a real-life thing FamilyWorld remembers. */
+/* The Bike Demo cast.
+   - Noah's Bike is the only active item; it starts unplaced and appears
+     in the world after the user runs the Add flow.
+   - The other items are visible placeholders for V1 ("coming soon") and
+     surface a toast when tapped. */
 const SEED_OBJECTS = [
   {
     id: "bike-1",
     name: "Noah's Bike",
     glyph: "🚲",
-    room: "kids",
+    room: "child",
     pos: { x: 5, y: 1 },
+    active: true,
+    placed: false,
     category: "Child / Equipment",
     colour: "Blue",
     receipt: "Stored",
@@ -36,130 +39,40 @@ const SEED_OBJECTS = [
     notes: "Mock data for prototype only.",
   },
   {
-    id: "hoover-1",
-    name: "Dyson V11",
-    glyph: "🧹",
-    room: "living",
-    pos: { x: 1, y: 2 },
-    category: "Appliance",
-    bought: { date: "03 Mar 2024", from: "John Lewis", price: "£399" },
-    warranty: { startsISO: "2024-03-03", endsISO: "2026-03-03" },
-    reminders: [
-      { when: "May 2026", text: "Replacement filter due — 6 months since last", urgent: true },
-      { when: "Mar 2026", text: "Warranty expiring soon — extend?", urgent: true },
-    ],
-    notes: "Cordless. Dock is in the under-stairs cupboard.",
+    id: "house-1",
+    name: "House",
+    glyph: "🏠",
+    room: "home",
+    pos: { x: 1, y: 1 },
+    active: false,
+    placed: true,
+    comingSoon: true,
+    category: "Home",
+    notes: "Home items and rooms — coming soon.",
   },
   {
-    id: "sofa-1",
-    name: "Big Green Sofa",
-    glyph: "🛋️",
-    room: "living",
-    pos: { x: 2, y: 0 },
-    category: "Furniture",
-    bought: { date: "21 Sep 2023", from: "Made.com", price: "£1,240" },
-    warranty: { startsISO: "2023-09-21", endsISO: "2028-09-21" },
-    reminders: [],
-    notes: "5-year frame warranty. Covers stain-protected.",
-  },
-  {
-    id: "tv-1",
-    name: "Living Room TV",
-    glyph: "📺",
-    room: "living",
-    pos: { x: 0, y: 1 },
-    category: "Appliance",
-    bought: { date: "11 Nov 2024", from: "Currys", price: "£749" },
-    warranty: { startsISO: "2024-11-11", endsISO: "2029-11-11" },
-    reminders: [
-      { when: "Nov 2026", text: "TV licence renewal", urgent: false },
-    ],
-    notes: "55\" OLED. Wall mount. Remote in side drawer.",
-  },
-  {
-    id: "fridge-1",
-    name: "Family Fridge",
-    glyph: "🧊",
-    room: "kitchen",
+    id: "vault-1",
+    name: "Document Vault",
+    glyph: "🗄️",
+    room: "docs",
     pos: { x: 1, y: 5 },
-    category: "Appliance",
-    bought: { date: "08 Jan 2024", from: "AO", price: "£899" },
-    warranty: { startsISO: "2024-01-08", endsISO: "2026-01-08" },
-    reminders: [
-      { when: "Past due", text: "Warranty expired — consider extending", urgent: true },
-    ],
-    notes: "American style, water filter changed Jan 2026.",
-  },
-  {
-    id: "coffee-1",
-    name: "Coffee Machine",
-    glyph: "☕",
-    room: "kitchen",
-    pos: { x: 2, y: 6 },
-    category: "Appliance",
-    bought: { date: "14 Feb 2025", from: "John Lewis", price: "£329" },
-    warranty: { startsISO: "2025-02-14", endsISO: "2027-02-14" },
-    reminders: [
-      { when: "May 2026", text: "Descale due — last cleaned 4 months ago", urgent: true },
-    ],
-    notes: "Bean-to-cup. Beans live in the top cupboard.",
-  },
-  {
-    id: "tablet-1",
-    name: "Family iPad",
-    glyph: "📱",
-    room: "kids",
-    pos: { x: 6, y: 2 },
-    category: "Tech",
-    bought: { date: "02 Dec 2024", from: "Apple", price: "£499" },
-    warranty: { startsISO: "2024-12-02", endsISO: "2026-12-02" },
-    reminders: [
-      { when: "Dec 2026", text: "AppleCare renewal window", urgent: false },
-    ],
-    notes: "Shared kids' iPad. Screen-time limits set.",
+    active: false,
+    placed: true,
+    comingSoon: true,
+    category: "Documents",
+    notes: "Passports, certificates and important papers — coming soon.",
   },
   {
     id: "car-1",
-    name: "Family Car",
+    name: "Car",
     glyph: "🚗",
     room: "outdoor",
     pos: { x: 5, y: 5 },
+    active: false,
+    placed: true,
+    comingSoon: true,
     category: "Vehicle",
-    bought: { date: "06 Apr 2022", from: "Arnold Clark", price: "£18,500" },
-    warranty: { startsISO: "2022-04-06", endsISO: "2027-04-06" },
-    reminders: [
-      { when: "Jun 2026", text: "MOT due", urgent: true },
-      { when: "Aug 2026", text: "Service due (every 12 months)", urgent: false },
-      { when: "Apr 2027", text: "Insurance renewal", urgent: false },
-    ],
-    notes: "VW Golf, plate AB22 XYZ. Service book in glovebox.",
-  },
-  {
-    id: "tools-1",
-    name: "Tool Cabinet",
-    glyph: "🧰",
-    room: "outdoor",
-    pos: { x: 4, y: 7 },
-    category: "Equipment",
-    bought: { date: "19 Aug 2023", from: "B&Q", price: "£140" },
-    warranty: { startsISO: "2023-08-19", endsISO: "2025-08-19" },
-    reminders: [],
-    notes: "Lockable. Spare key in kitchen drawer.",
-  },
-  {
-    id: "passport-1",
-    name: "Family Documents",
-    glyph: "📁",
-    room: "docs",
-    pos: { x: 7, y: 5 },
-    category: "Documents",
-    bought: { date: "—", from: "—", price: "—" },
-    warranty: null,
-    reminders: [
-      { when: "Sep 2026", text: "Sam's passport expires", urgent: true },
-      { when: "Mar 2027", text: "Driving licence renewal", urgent: false },
-    ],
-    notes: "Birth certificates, passports, marriage certificate. Stored in fire-safe.",
+    notes: "MOT, insurance and service reminders — coming soon.",
   },
 ];
 
@@ -247,84 +160,13 @@ function renderWorld() {
     worldEl.appendChild(label);
   }
 
-  // 3. Decide which objects are visible (heroes) and which are collapsed.
-  const objectsByRoom = new Map();
-  for (const room of ROOMS) objectsByRoom.set(room.id, []);
-  for (const obj of state.objects) {
-    if (objectsByRoom.has(obj.room)) objectsByRoom.get(obj.room).push(obj);
-  }
-
-  const visible = [];
-  for (const room of ROOMS) {
-    const items = rankRoomItems(objectsByRoom.get(room.id) || []);
-    const expanded = state.expandedRooms.has(room.id);
-    const heroes = expanded ? items : items.slice(0, HERO_LIMIT);
-    const hidden = expanded ? [] : items.slice(HERO_LIMIT);
-
-    for (const obj of heroes) visible.push(obj);
-
-    if (hidden.length > 0) {
-      const anchor = heroes[heroes.length - 1] || items[0];
-      const pill = createMoreEl(room, hidden.length, anchor);
-      worldEl.appendChild(pill);
-    } else if (expanded && items.length > HERO_LIMIT) {
-      const anchor = items[items.length - 1];
-      const pill = createCollapseEl(room, anchor);
-      worldEl.appendChild(pill);
-    }
-  }
-
-  // 4. Objects, depth-sorted (front = larger x+y)
+  // 3. Render placed objects, depth-sorted (front = larger x+y)
+  const visible = state.objects.filter(o => o.placed);
   const sorted = visible.sort((a, b) => (a.pos.x + a.pos.y) - (b.pos.x + b.pos.y));
   for (const obj of sorted) {
     const el = createObjectEl(obj);
     worldEl.appendChild(el);
   }
-}
-
-/* Importance ranking — items with urgent reminders first, then by reminder count, then by name. */
-function rankRoomItems(items) {
-  const score = (o) => {
-    const r = o.reminders || [];
-    return r.filter(x => x.urgent).length * 100 + r.length * 10;
-  };
-  return [...items].sort((a, b) => {
-    const d = score(b) - score(a);
-    return d !== 0 ? d : a.name.localeCompare(b.name);
-  });
-}
-
-function createMoreEl(room, count, anchor) {
-  const el = document.createElement("button");
-  el.className = "more-pill";
-  el.type = "button";
-  el.textContent = `+${count}`;
-  el.title = `Show ${count} more in ${room.name}`;
-  el.setAttribute("aria-label", el.title);
-  // Place near the anchor object (slightly up and to the right)
-  placeAt(el, anchor.pos.x + 0.5, anchor.pos.y + 0.5, 32, -52);
-  el.addEventListener("click", (e) => {
-    e.stopPropagation();
-    state.expandedRooms.add(room.id);
-    renderWorld();
-  });
-  return el;
-}
-
-function createCollapseEl(room, anchor) {
-  const el = document.createElement("button");
-  el.className = "more-pill is-collapse";
-  el.type = "button";
-  el.textContent = "−";
-  el.title = `Collapse ${room.name}`;
-  el.setAttribute("aria-label", el.title);
-  placeAt(el, anchor.pos.x + 0.5, anchor.pos.y + 0.5, 32, -52);
-  el.addEventListener("click", (e) => {
-    e.stopPropagation();
-    state.expandedRooms.delete(room.id);
-    renderWorld();
-  });
-  return el;
 }
 
 function createObjectEl(obj) {
@@ -334,6 +176,7 @@ function createObjectEl(obj) {
   el.dataset.id = obj.id;
   if (obj._spawning) el.classList.add("spawning");
   if (state.selectedId === obj.id) el.classList.add("selected");
+  if (obj.comingSoon) el.classList.add("is-inactive");
 
   const shadow = document.createElement("div");
   shadow.className = "obj-shadow";
@@ -349,12 +192,19 @@ function createObjectEl(obj) {
   label.textContent = obj.name;
   el.appendChild(label);
 
-  const reminderCount = (obj.reminders || []).length;
-  if (reminderCount > 0) {
-    const badge = document.createElement("div");
-    badge.className = "obj-badge";
-    badge.textContent = reminderCount;
-    el.appendChild(badge);
+  if (obj.comingSoon) {
+    const tag = document.createElement("div");
+    tag.className = "obj-soon";
+    tag.textContent = "Coming soon";
+    el.appendChild(tag);
+  } else {
+    const reminderCount = (obj.reminders || []).length;
+    if (reminderCount > 0) {
+      const badge = document.createElement("div");
+      badge.className = "obj-badge";
+      badge.textContent = reminderCount;
+      el.appendChild(badge);
+    }
   }
 
   // Place the object's anchor at the centre of its tile
@@ -372,6 +222,11 @@ const panelBody = document.getElementById("panelBody");
 function selectObject(id) {
   const obj = state.objects.find(o => o.id === id);
   if (!obj) return;
+  if (obj.comingSoon) {
+    showToast(`${obj.name} — coming soon`);
+    return;
+  }
+
   state.selectedId = id;
   state.recentId = id;
 
@@ -512,53 +367,14 @@ function roomName(id) {
 
 /* ---------- Add modal ---------- */
 
-const PRESETS = [
-  { name: "Noah's Bike", glyph: "🚲", room: "kids", category: "Child / Equipment",
-    bought: { date: "12 Feb 2026", from: "Halfords", price: "£189" },
-    warranty: { startsISO: "2026-02-12", endsISO: "2027-11-12", remainingText: "18 months remaining" },
-    colour: "Blue",
-    receipt: "Stored",
-    reminders: [{ when: "Nov 2026", text: "Check size/replacement in 6 months", urgent: false }],
-    notes: "Mock data for prototype only." },
-  { name: "Vacuum Cleaner", glyph: "🧹",  room: "living",  category: "Appliance", warrantyYears: 5,
-    reminders: [{ when: "+6 months", text: "Replacement filter due", urgent: false }],
-    notes: "Cordless model. Dock under stairs." },
-  { name: "Tablet",         glyph: "📱",  room: "kids",    category: "Tech",      warrantyYears: 2,
-    reminders: [{ when: "+24 months", text: "AppleCare renewal window", urgent: false }],
-    notes: "Family device with screen-time limits." },
-  { name: "Coffee Machine", glyph: "☕",  room: "kitchen", category: "Appliance", warrantyYears: 2,
-    reminders: [{ when: "+4 months", text: "Descale due", urgent: false }],
-    notes: "Bean-to-cup machine." },
-  { name: "Lego Set",       glyph: "🧱",  room: "kids",    category: "Toys",      warrantyYears: 0,
-    reminders: [{ when: "Birthday", text: "Sam's wishlist — saved for Dec", urgent: false }],
-    notes: "Stored in toy chest." },
-  { name: "Smart Speaker",  glyph: "🔊",  room: "kitchen", category: "Tech",      warrantyYears: 2,
-    reminders: [],
-    notes: "Linked to family account." },
-];
-
 const modalEl = document.getElementById("modal");
-const presetGrid = document.getElementById("presetGrid");
+const modalActions = document.getElementById("modalActions");
 const scanningEl = document.getElementById("scanning");
 const scanningLabel = document.getElementById("scanningLabel");
 
 function openModal() {
-  presetGrid.hidden = false;
+  modalActions.hidden = false;
   scanningEl.hidden = true;
-  presetGrid.innerHTML = PRESETS.map((p, i) => `
-    <button class="preset" data-i="${i}" type="button">
-      <div class="preset-icon">${p.glyph}</div>
-      <div class="preset-name">${p.name}</div>
-      <div class="preset-room">${roomName(p.room)}</div>
-    </button>
-  `).join("");
-  presetGrid.querySelectorAll(".preset").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const i = parseInt(btn.dataset.i, 10);
-      pickPreset(PRESETS[i]);
-    });
-  });
-
   modalEl.classList.add("open");
   modalEl.setAttribute("aria-hidden", "false");
 }
@@ -568,9 +384,18 @@ function closeModal() {
   modalEl.setAttribute("aria-hidden", "true");
 }
 
-function pickPreset(preset) {
-  // Show fake scanning animation, then spawn the object.
-  presetGrid.hidden = true;
+function confirmAddBike() {
+  const bike = state.objects.find(o => o.id === "bike-1");
+  if (!bike) return;
+
+  // If the bike is already placed, just close and open the drawer.
+  if (bike.placed) {
+    closeModal();
+    selectObject(bike.id);
+    return;
+  }
+
+  modalActions.hidden = true;
   scanningEl.hidden = false;
   const messages = [
     "Scanning receipt…",
@@ -587,64 +412,21 @@ function pickPreset(preset) {
     } else {
       clearInterval(t);
       closeModal();
-      spawnFromPreset(preset);
+      placeBike(bike);
     }
-  }, 550);
+  }, 500);
 }
 
-function spawnFromPreset(preset) {
-  const pos = findEmptyTileInRoom(preset.room) || { x: 0, y: 0 };
-  const today = new Date();
-  const ends = new Date(today);
-  ends.setFullYear(ends.getFullYear() + (preset.warrantyYears || 0));
-
-  const fallbackBought = {
-    date: today.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-    from: "Scanned receipt",
-    price: ["£" + (49 + Math.floor(Math.random() * 350)), "£" + (199 + Math.floor(Math.random() * 600))][Math.random() < 0.5 ? 0 : 1],
-  };
-  const fallbackWarranty = preset.warrantyYears > 0 ? {
-    startsISO: today.toISOString().slice(0, 10),
-    endsISO: ends.toISOString().slice(0, 10),
-  } : null;
-
-  const newObj = {
-    id: "obj-" + Math.random().toString(36).slice(2, 8),
-    name: preset.name,
-    glyph: preset.glyph,
-    room: preset.room,
-    pos,
-    category: preset.category,
-    colour: preset.colour,
-    receipt: preset.receipt,
-    bought: preset.bought || fallbackBought,
-    warranty: preset.warranty || fallbackWarranty,
-    reminders: preset.reminders,
-    notes: preset.notes,
-    _spawning: true,
-  };
-
-  state.objects.push(newObj);
+function placeBike(bike) {
+  bike.placed = true;
+  bike._spawning = true;
   renderWorld();
-  showToast(`${preset.name} added to ${roomName(preset.room)}`);
+  showToast("Noah's Bike added to your world");
 
-  // After spawn animation, drop the flag and auto-open the panel.
   setTimeout(() => {
-    newObj._spawning = false;
-    selectObject(newObj.id);
+    bike._spawning = false;
+    selectObject(bike.id);
   }, 600);
-}
-
-function findEmptyTileInRoom(roomId) {
-  const room = ROOMS.find(r => r.id === roomId);
-  if (!room) return null;
-  const taken = new Set(state.objects.filter(o => o.room === roomId).map(o => `${o.pos.x},${o.pos.y}`));
-  for (let x = room.x0; x <= room.x1; x++) {
-    for (let y = room.y0; y <= room.y1; y++) {
-      if (!taken.has(`${x},${y}`)) return { x, y };
-    }
-  }
-  return null;
 }
 
 /* ---------- Toast / hint ---------- */
@@ -764,6 +546,8 @@ const panelScrim = document.getElementById("panelScrim");
 
 document.getElementById("addBtn").addEventListener("click", openModal);
 document.getElementById("modalClose").addEventListener("click", closeModal);
+document.getElementById("cancelBtn").addEventListener("click", closeModal);
+document.getElementById("confirmBtn").addEventListener("click", confirmAddBike);
 document.getElementById("panelClose").addEventListener("click", closePanel);
 panelScrim.addEventListener("click", closePanel);
 document.getElementById("resetBtn").addEventListener("click", () => {
