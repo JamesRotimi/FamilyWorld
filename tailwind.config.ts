@@ -13,6 +13,7 @@ const config: Config = {
           DEFAULT: "#2a2724",
           soft: "#6c665d",
           mute: "#9a9388",
+          line: "#3a342c",  // charcoal stroke for illustrated linework
         },
         surface: {
           DEFAULT: "#fbf7ef",

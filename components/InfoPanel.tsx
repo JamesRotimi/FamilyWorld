@@ -7,173 +7,173 @@ type Props = {
   items: FamilyItem[];
   recentItem: FamilyItem | undefined;
   onSelect: (id: string) => void;
+  onScan: () => void;
 };
 
 /**
- * Editorial info panel that sits beside the world. Reads like a printed
- * legend / guidebook page — title, search, recent, "what's inside" key, and
- * a tip — wrapped in a tactile card with corner ornaments.
+ * Editorial left column. Reads like a guidebook spread — title,
+ * structured rows, hairline rules. Designed to feel integrated with the
+ * scene to the right, not a floating card.
  */
-export default function InfoPanel({ items, recentItem, onSelect }: Props) {
-  const active = items.filter((i) => i.status === "active");
+export default function InfoPanel({ items, recentItem, onSelect, onScan }: Props) {
+  const active = items.filter((i) => i.status === "active" && i.placed);
   const inactive = items.filter((i) => i.status === "coming-soon");
+  const bike = items.find((i) => i.id === "bike-1");
 
   return (
-    <aside className="info-panel relative flex flex-col gap-5 rounded-3xl border border-line bg-surface/70 p-6 shadow-soft backdrop-blur-[2px] lg:w-[320px] lg:flex-none">
-      <CornerOrnaments />
-
-      <header className="flex flex-col gap-1.5">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-mute">
-          The bike demo · v1
+    <aside className="relative flex w-full flex-col gap-6 border-ink-line/20 bg-transparent p-6 lg:w-[340px] lg:flex-none lg:border-r lg:px-7 lg:py-8">
+      <header className="flex flex-col gap-2">
+        <span className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink-mute">
+          FamilyWorld · v1
         </span>
-        <h2 className="font-display text-[22px] font-semibold leading-[1.1] tracking-[-0.015em] text-ink">
-          A guide to this little world
+        <h2 className="font-display text-[26px] font-semibold leading-[1.05] tracking-[-0.02em] text-ink">
+          General Entry into your FamilyWorld Home
         </h2>
         <p className="text-[12.5px] font-medium leading-relaxed text-ink-soft">
-          FamilyWorld is a living home for receipts, warranties and reminders.
-          Tap any object to explore.
+          A living guide to every receipt, warranty and reminder under your
+          roof. Tap any object on the right to open its details.
         </p>
       </header>
 
-      <Divider label="Find" />
-
       <SearchAndRecent items={items} recentItem={recentItem} onSelect={onSelect} />
 
-      <Divider label="Inside" />
+      <Section heading="FamilyWorld overview">
+        <KeyVal k="Items" v={`${active.length} active · ${inactive.length} preview`} />
+        <KeyVal k="Receipts stored" v="1 of 1" />
+        <KeyVal k="Warranties tracked" v="1 of 1" />
+        <KeyVal k="Documents protected" v="0 — coming soon" muted />
+      </Section>
 
-      <ul className="flex flex-col gap-2">
+      <Section heading="Active items">
         {active.map((item) => (
-          <LegendRow
-            key={item.id}
-            item={item}
-            badge={<ActiveBadge />}
-            onSelect={onSelect}
-          />
+          <ItemRow key={item.id} item={item} onSelect={onSelect} />
         ))}
+      </Section>
+
+      <Section heading="Coming next">
         {inactive.map((item) => (
-          <LegendRow
-            key={item.id}
-            item={item}
-            badge={<SoonBadge />}
-            onSelect={onSelect}
-            muted
-          />
+          <PreviewRow key={item.id} item={item} onSelect={onSelect} />
         ))}
-      </ul>
+      </Section>
 
-      <Divider label="Tip" />
+      <Section heading="Reminders" tone="alert">
+        {bike?.reminder && (
+          <div className="flex items-start gap-2.5 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-2">
+            <span aria-hidden className="mt-1 h-1.5 w-1.5 flex-none rounded-full bg-primary" />
+            <div>
+              <div className="text-[12px] font-semibold tracking-[-0.005em] text-ink">
+                {bike.reminder.text}
+              </div>
+              <div className="mt-0.5 text-[10.5px] font-medium text-ink-soft">
+                {bike.name} · {bike.reminder.when}
+              </div>
+            </div>
+          </div>
+        )}
+      </Section>
 
-      <p className="text-[12.5px] font-medium leading-relaxed text-ink-soft">
-        Tap an object to see receipts, reminders and warranty details. Inactive
-        zones preview features coming next.
-      </p>
+      <Section heading="Best next action">
+        <button
+          type="button"
+          onClick={onScan}
+          className="flex w-full items-center justify-between gap-3 rounded-md border border-ink-line/30 bg-surface px-3 py-2.5 text-left transition hover:border-primary-soft hover:bg-white"
+        >
+          <div className="min-w-0">
+            <div className="text-[12.5px] font-semibold text-ink">
+              Scan a receipt
+            </div>
+            <div className="mt-0.5 truncate text-[10.5px] font-medium text-ink-soft">
+              Demo a mocked add flow for Noah&apos;s Bike
+            </div>
+          </div>
+          <span aria-hidden className="text-[16px] leading-none text-primary">›</span>
+        </button>
+      </Section>
 
-      <p className="mt-2 text-center text-[10.5px] font-medium tracking-[0.06em] text-ink-mute">
-        Mock V1 prototype
+      <p className="mt-auto pt-4 text-[10.5px] font-medium tracking-[0.04em] text-ink-mute">
+        Mock V1 prototype — no real data, no backend.
       </p>
     </aside>
   );
 }
 
-function Divider({ label }: { label: string }) {
+function Section({
+  heading,
+  children,
+  tone = "default",
+}: {
+  heading: string;
+  children: React.ReactNode;
+  tone?: "default" | "alert";
+}) {
   return (
-    <div className="flex items-center gap-2.5">
-      <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-mute">
-        {label}
+    <section className="border-t border-ink-line/15 pt-4">
+      <div className="mb-2 flex items-center gap-2">
+        <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-mute">
+          {heading}
+        </h3>
+        {tone === "alert" && (
+          <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />
+        )}
+      </div>
+      <div className="flex flex-col gap-1.5">{children}</div>
+    </section>
+  );
+}
+
+function KeyVal({ k, v, muted = false }: { k: string; v: string; muted?: boolean }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 border-b border-dotted border-ink-line/40 pb-1 last:border-b-0">
+      <span className="text-[11.5px] font-medium text-ink-soft">{k}</span>
+      <span
+        className={`text-[12px] tabular-nums ${muted ? "font-medium text-ink-mute" : "font-semibold text-ink"}`}
+      >
+        {v}
       </span>
-      <span aria-hidden className="h-px flex-1 bg-line" />
     </div>
   );
 }
 
-function LegendRow({
-  item,
-  badge,
-  onSelect,
-  muted = false,
-}: {
-  item: FamilyItem;
-  badge: React.ReactNode;
-  onSelect: (id: string) => void;
-  muted?: boolean;
-}) {
+function ItemRow({ item, onSelect }: { item: FamilyItem; onSelect: (id: string) => void }) {
   return (
-    <li>
-      <button
-        type="button"
-        onClick={() => onSelect(item.id)}
-        className={`flex w-full items-center gap-3 rounded-xl border border-transparent px-2 py-1.5 text-left transition hover:border-line hover:bg-white ${
-          muted ? "" : ""
-        }`}
-      >
-        <span
-          aria-hidden
-          className={`flex h-7 w-7 flex-none items-center justify-center rounded-lg border border-line text-base ${
-            muted
-              ? "bg-surface-soft saturate-[0.35] opacity-70"
-              : "bg-gradient-to-b from-white to-surface"
-          }`}
-        >
-          {item.glyph}
+    <button
+      type="button"
+      onClick={() => onSelect(item.id)}
+      className="group flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left transition hover:bg-surface-soft"
+    >
+      <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-primary">●</span>
+      <span className="flex min-w-0 flex-1 flex-col leading-tight">
+        <span className="text-[13px] font-semibold text-ink">{item.name}</span>
+        <span className="truncate text-[10.5px] font-medium text-ink-soft">
+          {item.reminder ? `Next · ${item.reminder.text}` : item.type}
         </span>
-        <span className="flex min-w-0 flex-1 flex-col leading-tight">
-          <span
-            className={`truncate text-[13px] ${
-              muted ? "font-medium text-ink-soft" : "font-semibold text-ink"
-            }`}
-          >
-            {item.name}
-          </span>
-          {muted && item.preview && (
-            <span className="truncate text-[10.5px] font-medium text-ink-mute">
-              {item.preview}
-            </span>
-          )}
-          {!muted && item.reminder && (
-            <span className="truncate text-[10.5px] font-medium text-ink-soft">
-              {item.reminder.text} · {item.reminder.when}
-            </span>
-          )}
+      </span>
+      <span className="rounded-full bg-primary/12 px-1.5 py-px text-[9px] font-bold uppercase tracking-[0.1em] text-primary">
+        live
+      </span>
+    </button>
+  );
+}
+
+function PreviewRow({ item, onSelect }: { item: FamilyItem; onSelect: (id: string) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(item.id)}
+      className="group flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left transition hover:bg-surface-soft"
+    >
+      <span className="text-[10px] text-ink-mute">○</span>
+      <span className="flex min-w-0 flex-1 flex-col leading-tight">
+        <span className="truncate text-[12.5px] font-medium text-ink-soft">
+          {item.name}
         </span>
-        {badge}
-      </button>
-    </li>
-  );
-}
-
-function ActiveBadge() {
-  return (
-    <span className="flex flex-none items-center gap-1 rounded-full bg-primary/12 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-primary">
-      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-primary" />
-      Live
-    </span>
-  );
-}
-
-function SoonBadge() {
-  return (
-    <span className="flex-none rounded-full bg-line px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-ink-mute">
-      Soon
-    </span>
-  );
-}
-
-function CornerOrnaments() {
-  return (
-    <>
-      {(["top-3 left-3", "top-3 right-3", "bottom-3 left-3", "bottom-3 right-3"] as const).map(
-        (pos) => (
-          <span
-            key={pos}
-            aria-hidden
-            className={`pointer-events-none absolute ${pos} text-ink-mute/60`}
-          >
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-              <path d="M5 0V10M0 5H10" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-            </svg>
-          </span>
-        ),
-      )}
-    </>
+        <span className="truncate text-[10.5px] font-medium text-ink-mute">
+          {item.preview}
+        </span>
+      </span>
+      <span className="rounded-full bg-line px-1.5 py-px text-[9px] font-semibold uppercase tracking-[0.1em] text-ink-mute">
+        soon
+      </span>
+    </button>
   );
 }
