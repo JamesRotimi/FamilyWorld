@@ -3,14 +3,12 @@
 import { useCallback, useMemo, useState } from "react";
 import {
   initialItems,
-  itemPresets,
   findEmptyTileInZone,
   formatDate,
   addMonths,
   DEFAULT_RECENT_ID,
-  type CaptureMethod,
+  type ConfirmForm,
   type FamilyItem,
-  type ItemPreset,
 } from "@/data/familyWorldMock";
 import BrowserFrame from "./BrowserFrame";
 import InfoPanel from "./InfoPanel";
@@ -63,61 +61,42 @@ export default function AppShell() {
     [items, showToast],
   );
 
-  /** Build a new FamilyItem from a preset + capture method, place it in
-   *  an empty tile of its zone, and open its drawer. */
+  /** Take the (possibly user-edited) confirmation form, place a new
+   *  FamilyItem in the right zone, and open its drawer. */
   const handleConfirmAdd = useCallback(
-    async (preset: ItemPreset, method: CaptureMethod) => {
-      // Bike preset is treated specially when bike-1 isn't placed yet —
-      // re-using the focal item keeps the demo state stable.
-      const bikeAlreadyAvailable = items.some(
-        (i) => i.id === "bike-1" && !i.placed,
-      );
-      if (preset.id === "preset-bike" && bikeAlreadyAvailable) {
-        setItems((prev) =>
-          prev.map((i) => (i.id === "bike-1" ? { ...i, placed: true } : i)),
-        );
-        finalisePlacement("bike-1");
-        return;
-      }
-
+    async (form: ConfirmForm) => {
+      const purchase = parseISO(form.purchaseDateISO);
       const taken = items
-        .filter((i) => i.placed && i.zone === preset.zone)
+        .filter((i) => i.placed && i.zone === form.zone)
         .map((i) => i.position);
-      const pos = findEmptyTileInZone(preset.zone, taken) ?? { x: 0, y: 0 };
+      const pos = findEmptyTileInZone(form.zone, taken) ?? { x: 0, y: 0 };
 
-      const today = new Date();
-      const id =
-        preset.id === "preset-bike"
-          ? "obj-bike-" + randomSuffix()
-          : "obj-" + randomSuffix();
-
+      const id = "obj-" + randomSuffix();
       const newItem: FamilyItem = {
         id,
-        name: customName(preset),
-        type: preset.type,
-        zone: preset.zone,
+        name: form.name.trim() || "Untitled",
+        type: form.category.trim() || "Item",
+        zone: form.zone,
         status: "active",
         placed: true,
         position: pos,
-        glyph: preset.glyph,
-        purchaseDate: formatDate(today),
-        purchasedFrom: captureSource(method),
-        price: mockPrice(),
-        warranty: preset.warrantyYears
+        glyph: form.glyph,
+        purchaseDate: formatDate(purchase),
+        purchasedFrom: form.from || undefined,
+        price: form.price || undefined,
+        colour: form.colour || undefined,
+        receiptStatus: form.receipt || undefined,
+        serial: form.serial || undefined,
+        warranty: form.warrantyYears
           ? {
-              ends: formatDate(addMonths(today, preset.warrantyYears * 12)),
-              remainingText: `${preset.warrantyYears * 12} months remaining`,
+              ends: formatDate(addMonths(purchase, form.warrantyYears * 12)),
+              remainingText: `${form.warrantyYears * 12} months remaining`,
             }
           : undefined,
-        colour: preset.defaultColour,
-        receiptStatus: method === "receipt" ? "Stored" : method === "photo" ? "Photo on file" : "Manual entry",
-        reminder: preset.reminderInMonths
-          ? {
-              text: preset.reminderText ?? "Check on this item",
-              when: formatMonthYear(addMonths(today, preset.reminderInMonths)),
-            }
+        reminder: form.reminder
+          ? { text: form.reminder, when: deriveWhen(form.reminder) }
           : undefined,
-        notes: preset.notes ?? "Mock data for prototype only.",
+        notes: form.notes ?? "Mock data for prototype only.",
       };
 
       setItems((prev) => [...prev, newItem]);
@@ -264,29 +243,30 @@ function BrandMark() {
 
 /* ---------- Helpers used by the add flow ---------- */
 
-function customName(preset: ItemPreset): string {
-  // The bike preset gets the canonical "Noah's Bike" name only when re-using
-  // the seeded slot. New bikes added via the preset get a generic name.
-  return preset.name;
-}
-
-function captureSource(method: CaptureMethod): string {
-  return method === "receipt"
-    ? "Scanned receipt"
-    : method === "photo"
-      ? "Photo capture"
-      : "Manual entry";
-}
-
-function mockPrice(): string {
-  const v = 49 + Math.floor(Math.random() * 800);
-  return `£${v}`;
-}
-
 function randomSuffix(): string {
   return Math.random().toString(36).slice(2, 8);
 }
 
-function formatMonthYear(d: Date): string {
-  return d.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+function parseISO(iso: string): Date {
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? new Date() : d;
+}
+
+/** Best-effort "when" string for the reminder. If the reminder text
+ *  already mentions a window ("in 6 months", "annually"), reuse the bare
+ *  text; otherwise fall back to a generic "Coming up". */
+function deriveWhen(text: string): string {
+  const lc = text.toLowerCase();
+  const m = lc.match(/in (\d+) (day|week|month|year)s?/);
+  if (m) {
+    const n = parseInt(m[1], 10);
+    const unit = m[2] as "day" | "week" | "month" | "year";
+    const d = new Date();
+    if (unit === "day") d.setDate(d.getDate() + n);
+    else if (unit === "week") d.setDate(d.getDate() + n * 7);
+    else if (unit === "month") d.setMonth(d.getMonth() + n);
+    else d.setFullYear(d.getFullYear() + n);
+    return d.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+  }
+  return "Coming up";
 }

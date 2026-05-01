@@ -1,14 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { itemPresets, type CaptureMethod, type ItemPreset } from "@/data/familyWorldMock";
+import {
+  itemPresets,
+  zones,
+  addMonths,
+  type CaptureMethod,
+  type ConfirmForm,
+  type ItemPreset,
+  type ZoneId,
+} from "@/data/familyWorldMock";
 
 type Props = {
   open: boolean;
   onCancel: () => void;
-  /** Called once a preset is picked, capture method chosen, and the mock
-   *  animation has finished. AppShell handles placing the item. */
-  onConfirm: (preset: ItemPreset, method: CaptureMethod) => Promise<void> | void;
+  /** Called once the user has confirmed the prefilled details and clicked
+   *  "Place in World". AppShell turns the form into a placed FamilyItem. */
+  onConfirm: (form: ConfirmForm) => Promise<void> | void;
 };
 
 const SCAN_LABELS: Record<CaptureMethod, string[]> = {
@@ -16,72 +24,66 @@ const SCAN_LABELS: Record<CaptureMethod, string[]> = {
     "Scanning receipt…",
     "Reading purchase date…",
     "Detecting warranty terms…",
-    "Placing in your world…",
+    "Filling in the form…",
   ],
   photo: [
     "Reading photo…",
     "Identifying item…",
     "Estimating warranty…",
-    "Placing in your world…",
+    "Filling in the form…",
   ],
   manual: [
     "Saving entry…",
     "Tagging zone…",
-    "Stocking the world…",
+    "Filling in the form…",
   ],
 };
 
 const CAPTURE_METHODS: { id: CaptureMethod; label: string; sub: string; icon: React.ReactNode }[] = [
-  {
-    id: "receipt",
-    label: "Scan a receipt",
-    sub: "Snap the receipt — we'll read price + warranty",
-    icon: <ReceiptIcon />,
-  },
-  {
-    id: "photo",
-    label: "Snap a photo",
-    sub: "Use the item itself — we'll fill in what we can",
-    icon: <CameraIcon />,
-  },
-  {
-    id: "manual",
-    label: "Type it in",
-    sub: "Fastest. Just the basics, no scanning",
-    icon: <KeyboardIcon />,
-  },
+  { id: "receipt", label: "Scan a receipt", sub: "Snap the receipt — we'll read price + warranty", icon: <ReceiptIcon /> },
+  { id: "photo",   label: "Snap a photo",   sub: "Use the item itself — we'll fill in what we can", icon: <CameraIcon /> },
+  { id: "manual",  label: "Type it in",     sub: "Fastest. Just the basics, no scanning",          icon: <KeyboardIcon /> },
 ];
 
-type Step = "pick-item" | "pick-method" | "scanning";
+type Step = "pick-item" | "pick-method" | "scanning" | "confirm";
 
 export default function AddItemModal({ open, onCancel, onConfirm }: Props) {
   const [step, setStep] = useState<Step>("pick-item");
   const [picked, setPicked] = useState<ItemPreset | null>(null);
   const [method, setMethod] = useState<CaptureMethod | null>(null);
   const [scanIndex, setScanIndex] = useState(0);
+  const [form, setForm] = useState<ConfirmForm | null>(null);
 
   useEffect(() => {
     if (!open) {
-      // Reset on close so reopening starts fresh.
       setStep("pick-item");
       setPicked(null);
       setMethod(null);
       setScanIndex(0);
+      setForm(null);
     }
   }, [open]);
 
-  // Cycle scan labels while scanning
+  // Cycle scan labels, then transition to the confirm step.
   useEffect(() => {
-    if (step !== "scanning" || !method) return;
+    if (step !== "scanning" || !method || !picked) return;
     const labels = SCAN_LABELS[method];
     setScanIndex(0);
+    let i = 0;
     const t = setInterval(() => {
-      setScanIndex((i) => Math.min(i + 1, labels.length - 1));
+      i++;
+      if (i >= labels.length) {
+        clearInterval(t);
+        setForm(buildInitialForm(picked, method));
+        setStep("confirm");
+        return;
+      }
+      setScanIndex(i);
     }, 500);
     return () => clearInterval(t);
-  }, [step, method]);
+  }, [step, method, picked]);
 
-  // ESC closes (when not scanning)
+  // ESC closes (when not actively scanning)
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -93,18 +95,21 @@ export default function AddItemModal({ open, onCancel, onConfirm }: Props) {
 
   if (!open) return null;
 
-  async function handleConfirm(chosenMethod: CaptureMethod) {
-    if (!picked) return;
-    setMethod(chosenMethod);
+  function handleMethodPicked(m: CaptureMethod) {
+    setMethod(m);
     setStep("scanning");
-    await new Promise((r) => setTimeout(r, SCAN_LABELS[chosenMethod].length * 500));
-    await onConfirm(picked, chosenMethod);
+  }
+
+  async function handlePlace() {
+    if (!form) return;
+    await onConfirm(form);
   }
 
   const titleByStep: Record<Step, string> = {
     "pick-item": "Add something to your world",
     "pick-method": `How do you want to capture this ${picked?.name.toLowerCase()}?`,
     scanning: "Working on it…",
+    confirm: "Just to confirm",
   };
 
   const subByStep: Record<Step, string> = {
@@ -112,6 +117,7 @@ export default function AddItemModal({ open, onCancel, onConfirm }: Props) {
       "Pick what you want to add. Everything stays local to this prototype — no scanning, no AI, no cloud.",
     "pick-method": "All methods are mocked for V1.",
     scanning: "",
+    confirm: "We've prefilled what we found. Edit anything before placing it in your world.",
   };
 
   return (
@@ -122,9 +128,9 @@ export default function AddItemModal({ open, onCancel, onConfirm }: Props) {
       onClick={(e) => {
         if (e.target === e.currentTarget && step !== "scanning") onCancel();
       }}
-      className="fixed inset-0 z-30 flex items-center justify-center bg-[rgba(40,25,10,0.4)] p-6 backdrop-blur-sm"
+      className="fixed inset-0 z-30 flex items-center justify-center overflow-y-auto bg-[rgba(40,25,10,0.4)] p-6 backdrop-blur-sm"
     >
-      <div className="relative w-full max-w-[520px] animate-pop rounded-3xl border border-line bg-surface-frame p-7 pb-6 shadow-pop">
+      <div className="relative my-auto w-full max-w-[560px] animate-pop rounded-3xl border border-line bg-surface-frame p-7 pb-6 shadow-pop">
         <button
           type="button"
           onClick={onCancel}
@@ -153,7 +159,6 @@ export default function AddItemModal({ open, onCancel, onConfirm }: Props) {
           </p>
         )}
 
-        {/* STEP 1: pick item */}
         {step === "pick-item" && (
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
             {itemPresets.map((p) => (
@@ -176,7 +181,6 @@ export default function AddItemModal({ open, onCancel, onConfirm }: Props) {
           </div>
         )}
 
-        {/* STEP 2: pick capture method */}
         {step === "pick-method" && picked && (
           <>
             <div className="mb-4 flex items-center gap-3 rounded-2xl border border-line-soft bg-surface px-3 py-2.5">
@@ -201,7 +205,7 @@ export default function AddItemModal({ open, onCancel, onConfirm }: Props) {
                 <button
                   key={m.id}
                   type="button"
-                  onClick={() => handleConfirm(m.id)}
+                  onClick={() => handleMethodPicked(m.id)}
                   className="group flex items-center gap-3.5 rounded-2xl border border-line bg-surface px-4 py-3 text-left transition hover:-translate-y-0.5 hover:border-primary-soft hover:bg-white"
                 >
                   <span className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-surface-frame text-ink-soft group-hover:text-primary">
@@ -215,32 +219,205 @@ export default function AddItemModal({ open, onCancel, onConfirm }: Props) {
                 </button>
               ))}
             </div>
+
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="rounded-full border border-line bg-surface px-4 py-2 text-[13px] font-semibold text-ink-soft transition hover:border-ink-mute hover:text-ink"
+              >
+                Cancel
+              </button>
+            </div>
           </>
         )}
 
-        {/* STEP 3: scanning animation */}
         {step === "scanning" && method && picked && (
           <ScanningView label={SCAN_LABELS[method][scanIndex]} method={method} glyph={picked.glyph} />
         )}
 
-        {step === "pick-method" && (
-          <div className="mt-5 flex justify-end">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="rounded-full border border-line bg-surface px-4 py-2 text-[13px] font-semibold text-ink-soft transition hover:border-ink-mute hover:text-ink"
-            >
-              Cancel
-            </button>
-          </div>
+        {step === "confirm" && form && picked && (
+          <ConfirmFormView
+            form={form}
+            glyph={picked.glyph}
+            onChange={setForm}
+            onCancel={onCancel}
+            onPlace={handlePlace}
+          />
         )}
       </div>
     </div>
   );
 }
 
+function ConfirmFormView({
+  form,
+  glyph,
+  onChange,
+  onCancel,
+  onPlace,
+}: {
+  form: ConfirmForm;
+  glyph: string;
+  onChange: (next: ConfirmForm) => void;
+  onCancel: () => void;
+  onPlace: () => void;
+}) {
+  function set<K extends keyof ConfirmForm>(key: K, value: ConfirmForm[K]) {
+    onChange({ ...form, [key]: value });
+  }
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onPlace();
+      }}
+      className="flex flex-col gap-3.5"
+    >
+      {/* Mock identity card showing what's being added */}
+      <div className="flex items-center gap-3 rounded-2xl border border-line-soft bg-surface px-3 py-2.5">
+        <span className="text-2xl leading-none">{glyph}</span>
+        <span className="flex flex-col leading-tight">
+          <span className="text-ui-label font-semibold text-ink">{form.name || "—"}</span>
+          <span className="text-[10.5px] font-medium uppercase tracking-[0.08em] text-ink-soft">
+            {form.category} · {zoneShortName(form.zone)}
+          </span>
+        </span>
+      </div>
+
+      <Field label="Name">
+        <Input value={form.name} onChange={(v) => set("name", v)} />
+      </Field>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Field label="Category">
+          <Input value={form.category} onChange={(v) => set("category", v)} />
+        </Field>
+        <Field label="Zone">
+          <Select value={form.zone} onChange={(v) => set("zone", v as ZoneId)}>
+            {zones.map((z) => (
+              <option key={z.id} value={z.id}>
+                {z.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+
+        <Field label="Purchased">
+          <Input
+            type="date"
+            value={form.purchaseDateISO}
+            onChange={(v) => set("purchaseDateISO", v)}
+          />
+        </Field>
+        <Field label="Price">
+          <Input value={form.price} onChange={(v) => set("price", v)} />
+        </Field>
+
+        <Field label="From">
+          <Input value={form.from} onChange={(v) => set("from", v)} />
+        </Field>
+        <Field label="Colour">
+          <Input value={form.colour} onChange={(v) => set("colour", v)} />
+        </Field>
+      </div>
+
+      <Field label="Reminder">
+        <Input
+          value={form.reminder}
+          onChange={(v) => set("reminder", v)}
+          placeholder="e.g. Check size/replacement in 6 months"
+        />
+      </Field>
+
+      {/* Read-only context */}
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-dotted border-line/70 bg-surface px-3 py-2 text-[11.5px] font-medium text-ink-soft">
+        <span>
+          <span className="font-semibold uppercase tracking-[0.08em] text-ink-mute">Receipt</span>{" "}
+          · {form.receipt}
+        </span>
+        <span className="h-2 w-px bg-line" />
+        <span>
+          <span className="font-semibold uppercase tracking-[0.08em] text-ink-mute">Serial</span>{" "}
+          · {form.serial}
+        </span>
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center justify-end gap-2.5">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-full border border-line bg-surface px-4 py-2 text-[13px] font-semibold text-ink-soft transition hover:border-ink-mute hover:bg-white hover:text-ink"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-[13px] font-semibold text-white shadow-primary transition hover:-translate-y-0.5"
+        >
+          <span aria-hidden>+</span> Place in World
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-ink-mute">
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+function Input({
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  placeholder?: string;
+}) {
+  return (
+    <input
+      type={type}
+      value={value}
+      placeholder={placeholder}
+      onChange={(e) => onChange(e.target.value)}
+      className="rounded-lg border border-line bg-white px-3 py-2 text-[13.5px] font-medium text-ink outline-none transition placeholder:font-medium placeholder:text-ink-mute focus:border-primary-soft focus:shadow-[0_0_0_3px_rgba(232,114,74,0.15)]"
+    />
+  );
+}
+
+function Select({
+  value,
+  onChange,
+  children,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="rounded-lg border border-line bg-white px-3 py-2 text-[13.5px] font-medium text-ink outline-none transition focus:border-primary-soft focus:shadow-[0_0_0_3px_rgba(232,114,74,0.15)]"
+    >
+      {children}
+    </select>
+  );
+}
+
 function StepIndicator({ step }: { step: Step }) {
-  const idx = step === "pick-item" ? 0 : step === "pick-method" ? 1 : 2;
+  const idx = step === "pick-item" ? 0 : step === "pick-method" ? 1 : step === "confirm" ? 2 : 1;
   return (
     <div className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-ink-soft">
       <Dot active={idx >= 0} />
@@ -248,6 +425,9 @@ function StepIndicator({ step }: { step: Step }) {
       <span aria-hidden className="mx-1 text-ink-mute">·</span>
       <Dot active={idx >= 1} />
       <span>Capture</span>
+      <span aria-hidden className="mx-1 text-ink-mute">·</span>
+      <Dot active={idx >= 2} />
+      <span>Confirm</span>
     </div>
   );
 }
@@ -390,4 +570,44 @@ function zoneShortName(zoneId: string): string {
       outdoor: "Outdoor",
     } as Record<string, string>
   )[zoneId] ?? zoneId;
+}
+
+/** Build the prefilled confirm form. The bike preset uses the canonical
+ *  demo data per the V1 spec; everything else derives from preset + today. */
+function buildInitialForm(preset: ItemPreset, method: CaptureMethod): ConfirmForm {
+  const today = new Date();
+  const isBike = preset.id === "preset-bike";
+
+  const purchaseDateISO = isBike ? "2026-02-12" : isoDate(today);
+
+  const reminder = preset.reminderText
+    ? preset.reminderInMonths
+      ? `${preset.reminderText} in ${preset.reminderInMonths} months`
+      : preset.reminderText
+    : "";
+
+  return {
+    name: isBike ? "Noah's Bike" : preset.name,
+    category: preset.type,
+    zone: preset.zone,
+    purchaseDateISO,
+    price: isBike ? "£189" : `£${49 + Math.floor(Math.random() * 800)}`,
+    from: isBike ? "Halfords" : sourceFromMethod(method),
+    colour: preset.defaultColour ?? (isBike ? "Blue" : ""),
+    receipt:
+      method === "receipt" ? "Stored" : method === "photo" ? "Photo on file" : "Manual entry",
+    serial: "Mock serial stored",
+    reminder: isBike ? "Check size/replacement in 6 months" : reminder,
+    glyph: preset.glyph,
+    warrantyYears: preset.warrantyYears,
+    notes: preset.notes ?? "Mock data for prototype only.",
+  };
+}
+
+function isoDate(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function sourceFromMethod(m: CaptureMethod): string {
+  return m === "receipt" ? "Scanned receipt" : m === "photo" ? "Photo capture" : "Manual entry";
 }

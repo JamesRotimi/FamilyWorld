@@ -94,6 +94,7 @@ function DrawerBody({
     { k: "Category", v: item.type },
     item.colour ? { k: "Colour", v: item.colour } : null,
     item.receiptStatus ? { k: "Receipt", v: item.receiptStatus } : null,
+    item.serial ? { k: "Serial", v: item.serial } : null,
   ].filter((r): r is { k: string; v: string } => Boolean(r));
 
   return (
