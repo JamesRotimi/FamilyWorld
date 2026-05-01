@@ -57,20 +57,31 @@ export default function AppShell() {
   );
 
   const handleConfirmAdd = useCallback(async () => {
-    setItems((prev) =>
-      prev.map((i) => (i.id === "bike-1" ? { ...i, placed: true } : i)),
-    );
-    setSpawningId("bike-1");
+    const wasAlreadyPlaced =
+      items.find((i) => i.id === "bike-1")?.placed ?? false;
+
+    if (!wasAlreadyPlaced) {
+      setItems((prev) =>
+        prev.map((i) => (i.id === "bike-1" ? { ...i, placed: true } : i)),
+      );
+      setSpawningId("bike-1");
+      showToast("Noah's Bike added to your world");
+    }
+
     setModalOpen(false);
-    showToast("Noah's Bike added to your world");
-    // Open drawer once the spawn animation has had time to play
-    setTimeout(() => {
-      setSpawningId(null);
-      setSelectedId("bike-1");
-      setRecentId("bike-1");
-      setHintGone(true);
-    }, 500);
-  }, [showToast]);
+
+    // Open drawer once the spawn animation has had time to play (or
+    // immediately if the bike was already placed).
+    setTimeout(
+      () => {
+        setSpawningId(null);
+        setSelectedId("bike-1");
+        setRecentId("bike-1");
+        setHintGone(true);
+      },
+      wasAlreadyPlaced ? 0 : 500,
+    );
+  }, [items, showToast]);
 
   const handleReset = useCallback(() => {
     setItems(initialItems);
@@ -91,7 +102,7 @@ export default function AppShell() {
               FamilyWorld
             </h1>
             <p className="mt-0.5 text-[13px] font-medium text-ink-soft max-[420px]:hidden">
-              A living map of your family&apos;s things, documents and reminders.
+              Receipts, warranties and reminders for everything your family owns.
             </p>
           </div>
         </div>

@@ -77,17 +77,23 @@ export default function IsometricObject({
         {item.glyph}
       </div>
 
-      {/* Active items: hover-only name pill below */}
+      {/* Active items: always-visible name in full ink so the focal item
+          has the strongest legibility on the world. */}
       {!inactive && (
-        <span className="pointer-events-none absolute bottom-[-22px] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-line bg-surface px-2.5 py-[3px] text-[11px] font-semibold text-ink opacity-0 shadow-[0_2px_6px_rgba(50,35,20,0.06)] transition-opacity group-hover:opacity-100">
+        <span className="pointer-events-none absolute bottom-[-20px] left-1/2 -translate-x-1/2 whitespace-nowrap text-[10.5px] font-semibold tracking-[-0.01em] text-ink">
           {item.name}
         </span>
       )}
 
-      {/* Inactive items: small preview name beneath the icon (always visible);
-          fades out when hovering so the richer blurb can take its place. */}
+      {/* Inactive items: small preview name beneath the icon — same anchor as
+          the active label, but with a softer weight + colour and a tiny "soon"
+          tag to read clearly as a future feature. Fades out on hover so the
+          richer blurb can take its place. */}
       {inactive && (
-        <span className="pointer-events-none absolute bottom-[-20px] left-1/2 -translate-x-1/2 whitespace-nowrap text-[10.5px] font-medium tracking-[-0.005em] text-ink-soft opacity-100 transition-opacity duration-200 group-hover:opacity-0 group-focus-visible:opacity-0">
+        <span className="pointer-events-none absolute bottom-[-20px] left-1/2 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap text-[10.5px] font-medium tracking-[-0.005em] text-ink-mute opacity-100 transition-opacity duration-200 group-hover:opacity-0 group-focus-visible:opacity-0">
+          <span aria-hidden className="rounded-full bg-line px-1.5 py-px text-[8.5px] font-semibold uppercase tracking-[0.08em] text-ink-mute">
+            soon
+          </span>
           {item.name}
         </span>
       )}

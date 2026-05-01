@@ -95,7 +95,7 @@ export const initialItems: FamilyItem[] = [
     type: "Child / Equipment",
     zone: "child",
     status: "active",
-    placed: false,
+    placed: true,
     position: { x: 5, y: 1 },
     glyph: "🚲",
     colour: "Blue",
