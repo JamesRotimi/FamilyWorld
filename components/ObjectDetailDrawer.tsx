@@ -9,6 +9,7 @@ type Props = {
   onClose: () => void;
   onAddReminder: () => void;
   onViewReceipt: () => void;
+  onRemove: (id: string) => void;
 };
 
 export default function ObjectDetailDrawer({
@@ -17,6 +18,7 @@ export default function ObjectDetailDrawer({
   onClose,
   onAddReminder,
   onViewReceipt,
+  onRemove,
 }: Props) {
   // Lock body scroll on mobile when the bottom sheet is open
   useEffect(() => {
@@ -63,7 +65,14 @@ export default function ObjectDetailDrawer({
         </button>
 
         <div className="flex-1 overflow-y-auto px-6 pb-7 pt-7 max-md:px-5 max-md:pt-3.5">
-          {item && <DrawerBody item={item} onAddReminder={onAddReminder} onViewReceipt={onViewReceipt} />}
+          {item && (
+            <DrawerBody
+              item={item}
+              onAddReminder={onAddReminder}
+              onViewReceipt={onViewReceipt}
+              onRemove={onRemove}
+            />
+          )}
         </div>
       </aside>
     </>
@@ -74,10 +83,12 @@ function DrawerBody({
   item,
   onAddReminder,
   onViewReceipt,
+  onRemove,
 }: {
   item: FamilyItem;
   onAddReminder: () => void;
   onViewReceipt: () => void;
+  onRemove: (id: string) => void;
 }) {
   const detailRows = [
     { k: "Category", v: item.type },
@@ -183,8 +194,17 @@ function DrawerBody({
         )}
       </div>
 
-      <div className="mt-4 border-t border-line-soft pt-3.5 text-center text-[12px] font-medium text-ink-mute">
-        {item.notes ?? "Mock data for prototype only."}
+      <div className="mt-4 flex items-center justify-between gap-3 border-t border-line/60 pt-3.5">
+        <span className="truncate text-[12px] font-medium text-ink-mute">
+          {item.notes ?? "Mock data for prototype only."}
+        </span>
+        <button
+          type="button"
+          onClick={() => onRemove(item.id)}
+          className="flex-none rounded-full px-2.5 py-1 text-[11.5px] font-semibold text-ink-soft transition hover:bg-primary/10 hover:text-primary"
+        >
+          Remove
+        </button>
       </div>
     </>
   );

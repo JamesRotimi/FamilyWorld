@@ -3,8 +3,14 @@
 import { useCallback, useMemo, useState } from "react";
 import {
   initialItems,
+  itemPresets,
+  findEmptyTileInZone,
+  formatDate,
+  addMonths,
   DEFAULT_RECENT_ID,
+  type CaptureMethod,
   type FamilyItem,
+  type ItemPreset,
 } from "@/data/familyWorldMock";
 import BrowserFrame from "./BrowserFrame";
 import InfoPanel from "./InfoPanel";
@@ -12,6 +18,8 @@ import FamilyWorld from "./FamilyWorld";
 import ObjectDetailDrawer from "./ObjectDetailDrawer";
 import AddItemModal from "./AddItemModal";
 import Toast from "./Toast";
+
+const SEED_IDS = new Set(initialItems.map((i) => i.id));
 
 export default function AppShell() {
   const [items, setItems] = useState<FamilyItem[]>(initialItems);
@@ -55,29 +63,105 @@ export default function AppShell() {
     [items, showToast],
   );
 
-  const handleConfirmAdd = useCallback(async () => {
-    const wasAlreadyPlaced =
-      items.find((i) => i.id === "bike-1")?.placed ?? false;
-
-    if (!wasAlreadyPlaced) {
-      setItems((prev) =>
-        prev.map((i) => (i.id === "bike-1" ? { ...i, placed: true } : i)),
+  /** Build a new FamilyItem from a preset + capture method, place it in
+   *  an empty tile of its zone, and open its drawer. */
+  const handleConfirmAdd = useCallback(
+    async (preset: ItemPreset, method: CaptureMethod) => {
+      // Bike preset is treated specially when bike-1 isn't placed yet —
+      // re-using the focal item keeps the demo state stable.
+      const bikeAlreadyAvailable = items.some(
+        (i) => i.id === "bike-1" && !i.placed,
       );
-      setSpawningId("bike-1");
-      showToast("Noah's Bike added to your world");
-    }
+      if (preset.id === "preset-bike" && bikeAlreadyAvailable) {
+        setItems((prev) =>
+          prev.map((i) => (i.id === "bike-1" ? { ...i, placed: true } : i)),
+        );
+        finalisePlacement("bike-1");
+        return;
+      }
 
+      const taken = items
+        .filter((i) => i.placed && i.zone === preset.zone)
+        .map((i) => i.position);
+      const pos = findEmptyTileInZone(preset.zone, taken) ?? { x: 0, y: 0 };
+
+      const today = new Date();
+      const id =
+        preset.id === "preset-bike"
+          ? "obj-bike-" + randomSuffix()
+          : "obj-" + randomSuffix();
+
+      const newItem: FamilyItem = {
+        id,
+        name: customName(preset),
+        type: preset.type,
+        zone: preset.zone,
+        status: "active",
+        placed: true,
+        position: pos,
+        glyph: preset.glyph,
+        purchaseDate: formatDate(today),
+        purchasedFrom: captureSource(method),
+        price: mockPrice(),
+        warranty: preset.warrantyYears
+          ? {
+              ends: formatDate(addMonths(today, preset.warrantyYears * 12)),
+              remainingText: `${preset.warrantyYears * 12} months remaining`,
+            }
+          : undefined,
+        colour: preset.defaultColour,
+        receiptStatus: method === "receipt" ? "Stored" : method === "photo" ? "Photo on file" : "Manual entry",
+        reminder: preset.reminderInMonths
+          ? {
+              text: preset.reminderText ?? "Check on this item",
+              when: formatMonthYear(addMonths(today, preset.reminderInMonths)),
+            }
+          : undefined,
+        notes: preset.notes ?? "Mock data for prototype only.",
+      };
+
+      setItems((prev) => [...prev, newItem]);
+      finalisePlacement(id);
+    },
+    [items],
+  );
+
+  function finalisePlacement(id: string) {
+    setSpawningId(id);
     setModalOpen(false);
+    showToast(`Added to your world`);
+    setTimeout(() => {
+      setSpawningId(null);
+      setSelectedId(id);
+      setRecentId(id);
+    }, 500);
+  }
 
-    setTimeout(
-      () => {
-        setSpawningId(null);
-        setSelectedId("bike-1");
-        setRecentId("bike-1");
-      },
-      wasAlreadyPlaced ? 0 : 500,
-    );
-  }, [items, showToast]);
+  /** Remove a placed item. Seeded items get unplaced (Reset can restore
+   *  them); user-added items are deleted from state. */
+  const handleRemove = useCallback(
+    (id: string) => {
+      const item = items.find((i) => i.id === id);
+      if (!item) return;
+      if (SEED_IDS.has(id)) {
+        setItems((prev) =>
+          prev.map((i) => (i.id === id ? { ...i, placed: false } : i)),
+        );
+      } else {
+        setItems((prev) => prev.filter((i) => i.id !== id));
+      }
+      setSelectedId(null);
+      if (recentId === id) {
+        // Pick another active item as recent, or fall back to the bike id.
+        const fallback = items.find(
+          (i) => i.id !== id && i.status === "active" && i.placed,
+        );
+        setRecentId(fallback?.id ?? DEFAULT_RECENT_ID);
+      }
+      showToast(`Removed from your world`);
+    },
+    [items, recentId, showToast],
+  );
 
   const handleReset = useCallback(() => {
     setItems(initialItems);
@@ -89,15 +173,14 @@ export default function AppShell() {
 
   return (
     <BrowserFrame>
-      {/* Identity bar inside the frame: brand + tagline + buttons. */}
-      <div className="flex items-center justify-between gap-4 border-b border-ink-line/15 px-6 py-4 max-md:flex-wrap max-md:gap-2.5 max-md:px-4 lg:px-8">
+      <div className="flex items-center justify-between gap-4 border-b border-line/60 px-6 py-4 max-md:flex-wrap max-md:gap-2.5 max-md:px-4 lg:px-8">
         <div className="flex items-center gap-3.5">
           <BrandMark />
           <div>
             <h1 className="font-display text-[22px] font-semibold tracking-[-0.015em] text-ink">
               FamilyWorld
             </h1>
-            <p className="mt-0.5 text-[12.5px] font-medium text-ink-soft max-[420px]:hidden">
+            <p className="mt-0.5 text-ui-small font-medium text-ink-soft max-[420px]:hidden">
               Receipts, warranties and reminders for everything your family owns.
             </p>
           </div>
@@ -108,7 +191,7 @@ export default function AppShell() {
             type="button"
             onClick={handleReset}
             title="Reset world"
-            className="rounded-full border border-ink-line/30 bg-surface px-4 py-2 text-[13px] font-semibold text-ink-soft transition hover:border-ink-mute hover:bg-white hover:text-ink"
+            className="rounded-full border border-line bg-surface px-4 py-2 text-[13px] font-semibold text-ink-soft transition hover:border-ink-mute hover:bg-white hover:text-ink"
           >
             Reset
           </button>
@@ -124,7 +207,6 @@ export default function AppShell() {
         </div>
       </div>
 
-      {/* Main editorial spread: left guide column, right illustrated scene. */}
       <div className="flex flex-col lg:flex-row lg:items-stretch">
         <InfoPanel
           items={items}
@@ -146,6 +228,7 @@ export default function AppShell() {
         onClose={() => setSelectedId(null)}
         onAddReminder={() => showToast("Reminder added (mock)")}
         onViewReceipt={() => showToast("Receipt preview is mocked for V1")}
+        onRemove={handleRemove}
       />
 
       <AddItemModal
@@ -169,7 +252,7 @@ function BrandMark() {
           height: 0,
           borderLeft: "13px solid transparent",
           borderRight: "13px solid transparent",
-          borderBottom: "13px solid #e07a4f",
+          borderBottom: "13px solid #e8724a",
         }}
       />
       <span className="absolute bottom-1 left-1/2 h-[18px] w-5 -translate-x-1/2 rounded-md border-2 border-primary bg-surface">
@@ -177,4 +260,33 @@ function BrandMark() {
       </span>
     </div>
   );
+}
+
+/* ---------- Helpers used by the add flow ---------- */
+
+function customName(preset: ItemPreset): string {
+  // The bike preset gets the canonical "Noah's Bike" name only when re-using
+  // the seeded slot. New bikes added via the preset get a generic name.
+  return preset.name;
+}
+
+function captureSource(method: CaptureMethod): string {
+  return method === "receipt"
+    ? "Scanned receipt"
+    : method === "photo"
+      ? "Photo capture"
+      : "Manual entry";
+}
+
+function mockPrice(): string {
+  const v = 49 + Math.floor(Math.random() * 800);
+  return `£${v}`;
+}
+
+function randomSuffix(): string {
+  return Math.random().toString(36).slice(2, 8);
+}
+
+function formatMonthYear(d: Date): string {
+  return d.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
 }
