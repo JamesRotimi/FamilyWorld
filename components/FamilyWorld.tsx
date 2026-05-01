@@ -17,29 +17,27 @@ type Props = {
   onSelect: (id: string) => void;
 };
 
-const STROKE = "#3a342c";
+const STROKE = "#3A332C";
 const SVG_WIDTH = 880;
-// Taller — needs to fit walls extruded up + zone depth.
-const SVG_HEIGHT = 580;
+const SVG_HEIGHT = 500;
 
 function labelPlacement(zone: Zone) {
   switch (zone.labelAnchor) {
     case "top":
-      return tileToPx(zone.x0 + 0.5, zone.y0 + 0.5, 0, -82);
+      return tileToPx(zone.x0 + 0.5, zone.y0 + 0.5, 0, -54);
     case "bottom":
-      return tileToPx(zone.x1 + 0.5, zone.y1 + 0.5, 0, 50 + ZONE_DEPTH);
+      return tileToPx(zone.x1 + 0.5, zone.y1 + 0.5, 0, 54 + ZONE_DEPTH);
     case "left":
-      return tileToPx(zone.x0 + 0.5, zone.y1 + 0.5, -50, -10);
+      return tileToPx(zone.x0 + 0.5, zone.y1 + 0.5, -50, -8);
     case "right":
-      return tileToPx(zone.x1 + 0.5, zone.y0 + 0.5, 50, -10);
+      return tileToPx(zone.x1 + 0.5, zone.y0 + 0.5, 50, -8);
   }
 }
 
 /**
- * The illustrated isometric scene. Volumetric SVG zone blocks become
- * cutaway rooms with back walls and windows; outdoor stays open with
- * trees + a path. HTML overlays for items + zone signs keep
- * interactivity and accessibility intact.
+ * The illustrated isometric scene. Volumetric chunky platforms with
+ * miniatures sitting on top — no walls, no roofline. HTML overlays
+ * keep the items interactive and accessible.
  */
 export default function FamilyWorld({
   items,
@@ -53,17 +51,7 @@ export default function FamilyWorld({
   );
 
   return (
-    <div className="relative flex flex-1 justify-center overflow-hidden bg-[#f6efde] px-6 pb-12 pt-10 lg:pb-16 lg:pt-14">
-      {/* Soft cutaway sky behind the scene */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 50% 35% at 60% 25%, rgba(255, 226, 188, 0.55) 0%, rgba(255, 226, 188, 0) 70%)",
-        }}
-      />
-
+    <div className="world-platform relative flex flex-1 justify-center overflow-hidden px-6 pb-12 pt-10 lg:pb-16 lg:pt-14">
       <div
         className="relative mx-auto origin-top scale-[1.06] max-lg:scale-[0.78] max-md:scale-[0.6] max-sm:scale-[0.46]"
         style={{ width: SVG_WIDTH, height: SVG_HEIGHT }}
@@ -88,7 +76,6 @@ export default function FamilyWorld({
             </filter>
           </defs>
 
-          {/* Render zones back-to-front so depth composites correctly. */}
           {[...zones]
             .sort((a, b) => a.x0 + a.y0 - (b.x0 + b.y0))
             .map((zone) => (
@@ -97,7 +84,7 @@ export default function FamilyWorld({
               </g>
             ))}
 
-          {/* Outdoor charm: trees, path stones */}
+          {/* Outdoor decoration — trees, bushes, a small path. */}
           <Tree x={555} y={368} scale={0.95} />
           <Tree x={672} y={400} scale={1.05} />
           <Bush x={500} y={420} />
@@ -105,7 +92,7 @@ export default function FamilyWorld({
           <PathStones />
         </svg>
 
-        {/* Floating zone signs — restyled as embedded "wood plaque" labels. */}
+        {/* Embedded plaque-style zone signs */}
         {zones.map((zone) => {
           const { left, top } = labelPlacement(zone);
           return (
@@ -119,7 +106,6 @@ export default function FamilyWorld({
           );
         })}
 
-        {/* Objects, depth-sorted. */}
         {sorted.map((item) => (
           <IsometricObject
             key={item.id}
@@ -134,16 +120,15 @@ export default function FamilyWorld({
   );
 }
 
-/** A small "wood plaque" zone sign — embedded in the scene rather than
- *  floating like a chip. */
+/** Plaque-style zone sign — token-bound (background, border, shadow,
+ *  padding, font from /design-tokens.json → leaderLineAnnotations.labelFormat). */
 function ZoneSign({ label }: { label: string }) {
   return (
     <span
-      className="relative inline-flex items-center gap-1.5 whitespace-nowrap rounded-[6px] border border-ink-line/50 bg-[#f5e9c8] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-ink shadow-[0_2px_4px_rgba(50,35,20,0.12)]"
+      className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-line bg-[#FFF9EF] px-3.5 py-1.5 text-[12px] font-semibold uppercase tracking-[0.16em] text-[#50483F] shadow-plaque"
     >
-      <span aria-hidden className="h-1 w-1 rounded-full bg-ink-line/60" />
+      <span aria-hidden className="h-1 w-1 rounded-full bg-ink-line/40" />
       {label}
-      <span aria-hidden className="h-1 w-1 rounded-full bg-ink-line/60" />
     </span>
   );
 }
@@ -171,8 +156,6 @@ function Bush({ x, y }: { x: number; y: number }) {
   );
 }
 
-/** Decorative dotted path leading from the front of the outdoor zone
- *  toward the documents zone — implies movement/flow. */
 function PathStones() {
   const stones = [];
   for (let i = 0; i < 6; i++) {
@@ -193,4 +176,3 @@ function PathStones() {
   }
   return <>{stones}</>;
 }
-

@@ -1,0 +1,76 @@
+{
+  "source_note": "Approximate visual spec from the FamilyWorld OS reference. Treat values as design tokens, not pixel-perfect measurements.",
+  "background": {
+    "hex": "#F8F1E6",
+    "description": "Warm cream / parchment background"
+  },
+  "outlineStroke": {
+    "primaryColour": "#3A332C",
+    "softUiBorderColour": "#E3D8C8",
+    "weightPx": 1,
+    "description": "Use 1px soft borders for UI panels; 1.25–1.5px darker strokes only on illustrated objects/details."
+  },
+  "commonFillColours": [
+    { "name": "Warm cream",       "hex": "#F8F1E6", "usage": "page background and large UI surfaces" },
+    { "name": "Stone beige",      "hex": "#D8C295", "usage": "home platform / warm land tile" },
+    { "name": "Soft stone grey",  "hex": "#BFB8A9", "usage": "documents platform / vault area" },
+    { "name": "Muted grass green","hex": "#9AAA73", "usage": "outdoor platform / grass" },
+    { "name": "Soft sky blue",    "hex": "#9FC0D8", "usage": "child zone / bike platform" }
+  ],
+  "accentColours": {
+    "ctaOrange": "#E8724A",
+    "notificationOrange": "#F06D3F",
+    "darkText": "#2E2924",
+    "mutedText": "#7E7468"
+  },
+  "typography": {
+    "headingFontStyle": "Warm editorial serif, medium-to-bold",
+    "bodyFontStyle": "Clean humanist sans-serif, regular weight",
+    "labelFontStyle": "Rounded sans-serif, uppercase or title case, medium/semi-bold",
+    "sizesPx": {
+      "heading": 28,
+      "body": 14,
+      "smallBody": 12,
+      "label": 13,
+      "microLabel": 10
+    }
+  },
+  "layout": {
+    "leftPanelWidthPercent": 24,
+    "mainWorldAreaPercent": 66,
+    "pagePaddingPx": 40,
+    "gapBetweenPanelAndWorldPx": 28
+  },
+  "outerFrame": {
+    "cornerRadiusPx": 32,
+    "borderColour": "#E5D8C7",
+    "borderWidthPx": 1,
+    "surfaceColour": "#FBF5EA",
+    "shadow": "0 24px 80px rgba(64, 45, 24, 0.10), 0 4px 16px rgba(64, 45, 24, 0.06)"
+  },
+  "leftPanel": {
+    "cornerRadiusPx": 28,
+    "background": "#FBF7EF",
+    "borderColour": "#E1D6C7",
+    "shadow": "0 16px 50px rgba(72, 53, 31, 0.08)",
+    "internalPaddingPx": 24
+  },
+  "cutawayWorld": {
+    "wallToFloorHeightRatio": 0.22,
+    "tileCornerRadiusPx": 28,
+    "tileEdgeTreatment": "Rounded bevel with slightly darker side faces",
+    "lighting": { "direction": "top-left", "shadowDirection": "down-right" }
+  },
+  "leaderLineAnnotations": {
+    "labelFormat": {
+      "shape": "rounded pill",
+      "background": "#FFF9EF",
+      "border": "1px solid #E2D5C4",
+      "shadow": "0 4px 12px rgba(60, 45, 30, 0.10)",
+      "padding": "8px 14px",
+      "fontSizePx": 13,
+      "fontWeight": 600,
+      "textColour": "#50483F"
+    }
+  }
+}

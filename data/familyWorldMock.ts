@@ -99,8 +99,8 @@ export function zoneCorners(zone: { x0: number; y0: number; x1: number; y1: numb
 }
 
 /** Vertical thickness (depth) of each zone block in pixels — gives the
- *  "miniature platform" feel. */
-export const ZONE_DEPTH = 28;
+ *  chunky "miniature platform" feel of the reference. */
+export const ZONE_DEPTH = 36;
 
 /* ---------- Zones ---------- */
 
@@ -109,10 +109,10 @@ export const zones: Zone[] = [
     id: "home",
     name: "Home",
     x0: 0, y0: 0, x1: 3, y1: 3,
-    fill: "#e9dec3",        // warm sand
-    sideRight: "#d6c8a4",
-    sideLeft: "#b9aa83",
-    edge: "#cdbf99",
+    fill: "#D8C295",        // stone beige (token)
+    sideRight: "#B8A275",
+    sideLeft: "#9C865A",
+    edge: "#B8A275",
     surface: "soil",
     labelAnchor: "top",
   },
@@ -120,10 +120,10 @@ export const zones: Zone[] = [
     id: "child",
     name: "Child Zone",
     x0: 4, y0: 0, x1: 7, y1: 3,
-    fill: "#bfd6e2",        // dusty blue (water-side)
-    sideRight: "#9ec0d0",
-    sideLeft: "#7ea7ba",
-    edge: "#a4c2d2",
+    fill: "#9FC0D8",        // soft sky blue (token)
+    sideRight: "#82A4BD",
+    sideLeft: "#658BA8",
+    edge: "#82A4BD",
     surface: "water",
     labelAnchor: "top",
   },
@@ -131,10 +131,10 @@ export const zones: Zone[] = [
     id: "docs",
     name: "Documents",
     x0: 0, y0: 4, x1: 3, y1: 7,
-    fill: "#dfd9cd",        // warm stone
-    sideRight: "#c8c0ad",
-    sideLeft: "#aaa28e",
-    edge: "#bfb7a3",
+    fill: "#BFB8A9",        // soft stone grey (token)
+    sideRight: "#A39C8B",
+    sideLeft: "#857F70",
+    edge: "#A39C8B",
     surface: "stone",
     labelAnchor: "left",
   },
@@ -142,10 +142,10 @@ export const zones: Zone[] = [
     id: "outdoor",
     name: "Outdoor",
     x0: 4, y0: 4, x1: 7, y1: 7,
-    fill: "#c9d6b3",        // muted grass
-    sideRight: "#a8ba8e",
-    sideLeft: "#88a06f",
-    edge: "#b1c195",
+    fill: "#9AAA73",        // muted grass green (token)
+    sideRight: "#7C8E58",
+    sideLeft: "#607240",
+    edge: "#7C8E58",
     surface: "grass",
     labelAnchor: "right",
   },
