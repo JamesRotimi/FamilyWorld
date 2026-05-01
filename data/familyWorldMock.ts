@@ -211,3 +211,112 @@ export const initialItems: FamilyItem[] = [
 
 /** Default focal item for the Recent strip on first load. */
 export const DEFAULT_RECENT_ID = "bike-1";
+
+/* ---------- Add-flow presets ---------- */
+
+export type CaptureMethod = "receipt" | "photo" | "manual";
+
+export type ItemPreset = {
+  id: string;
+  name: string;
+  type: string;
+  zone: ZoneId;
+  glyph: string;
+  defaultColour?: string;
+  /** Years of cover for the warranty bar (omit for items that don't carry one). */
+  warrantyYears?: number;
+  /** Months from today to fire the next reminder. */
+  reminderInMonths?: number;
+  reminderText?: string;
+  notes?: string;
+};
+
+export const itemPresets: ItemPreset[] = [
+  {
+    id: "preset-bike",
+    name: "Bike",
+    type: "Child / Equipment",
+    zone: "child",
+    glyph: "🚲",
+    defaultColour: "Blue",
+    warrantyYears: 2,
+    reminderInMonths: 6,
+    reminderText: "Check size/replacement",
+    notes: "Mock data — added via the Bike Demo flow.",
+  },
+  {
+    id: "preset-vacuum",
+    name: "Vacuum",
+    type: "Appliance",
+    zone: "home",
+    glyph: "🧹",
+    warrantyYears: 5,
+    reminderInMonths: 6,
+    reminderText: "Replace filter",
+    notes: "Mock appliance — added via the demo flow.",
+  },
+  {
+    id: "preset-tv",
+    name: "Television",
+    type: "Appliance",
+    zone: "home",
+    glyph: "📺",
+    warrantyYears: 5,
+    notes: "Mock appliance — added via the demo flow.",
+  },
+  {
+    id: "preset-lego",
+    name: "Lego set",
+    type: "Toys",
+    zone: "child",
+    glyph: "🧱",
+    notes: "Mock toy — added via the demo flow.",
+  },
+  {
+    id: "preset-passport",
+    name: "Passport",
+    type: "Document",
+    zone: "docs",
+    glyph: "📘",
+    reminderInMonths: 60,
+    reminderText: "Passport expires",
+    notes: "Mock document — added via the demo flow.",
+  },
+  {
+    id: "preset-tools",
+    name: "Tool cabinet",
+    type: "Equipment",
+    zone: "outdoor",
+    glyph: "🧰",
+    warrantyYears: 2,
+    notes: "Mock equipment — added via the demo flow.",
+  },
+];
+
+/** Find an unused tile inside a zone for a newly-placed item. */
+export function findEmptyTileInZone(
+  zoneId: ZoneId,
+  takenPositions: Array<{ x: number; y: number }>,
+): { x: number; y: number } | null {
+  const zone = zones.find((z) => z.id === zoneId);
+  if (!zone) return null;
+  const taken = new Set(takenPositions.map((p) => `${p.x},${p.y}`));
+  for (let x = zone.x0; x <= zone.x1; x++) {
+    for (let y = zone.y0; y <= zone.y1; y++) {
+      if (!taken.has(`${x},${y}`)) return { x, y };
+    }
+  }
+  return null;
+}
+
+/** Format a date as "12 Feb 2026" (or similar) for the drawer. */
+export function formatDate(d: Date): string {
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+/** Add `months` to a date and return a new Date. */
+export function addMonths(d: Date, months: number): Date {
+  const next = new Date(d);
+  next.setMonth(next.getMonth() + months);
+  return next;
+}
