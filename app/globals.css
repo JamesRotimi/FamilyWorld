@@ -6,64 +6,27 @@
   html,
   body {
     min-height: 100%;
-    background:
-      radial-gradient(1200px 700px at 50% -10%, #fbf7ec 0%, rgba(251, 247, 236, 0) 60%),
-      linear-gradient(180deg, #f8f3e8 0%, #f3ecdc 100%);
-    color: #2a2724;
+    background: #f8f1e6;
+    color: #2e2924;
     letter-spacing: -0.005em;
   }
 }
 
-/* Isometric tile shape — kept in CSS because clip-path is awkward in Tailwind. */
-.tile-shape {
-  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+/* Outer page surface — slightly different cream to the frame so the
+   browser frame reads as a card on top. */
+.page-surface {
+  background:
+    radial-gradient(1200px 700px at 50% -10%, #fbf7ec 0%, rgba(248, 241, 230, 0) 60%),
+    linear-gradient(180deg, #f8f1e6 0%, #f0e6d4 100%);
 }
 
-/* World platform with diorama feel — gentle "morning light" wash so the
-   scene reads as warm and lived-in without becoming busy.
-   The dotted paper texture adds an editorial / illustrated feel. */
+/* Subtle linen texture for the world platform — adds painterly variation. */
 .world-platform {
-  background-color: #faf3e2;
+  background-color: #fbf5ea;
   background-image:
     radial-gradient(ellipse 38% 28% at 62% 30%, rgba(255, 220, 175, 0.55) 0%, rgba(255, 220, 175, 0) 70%),
     radial-gradient(ellipse 60% 45% at 50% 62%, rgba(255, 246, 226, 0.95) 0%, rgba(255, 246, 226, 0) 70%),
     linear-gradient(180deg, #fbf6ea 0%, #f3ead6 100%),
     url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='6' height='6'><circle cx='1' cy='1' r='0.5' fill='rgba(50,35,20,0.05)'/></svg>");
   background-size: auto, auto, auto, 6px 6px;
-}
-
-/* Editorial info panel — subtle linen texture so the card reads tactile. */
-.info-panel {
-  background-image:
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='6' height='6'><circle cx='1' cy='1' r='0.4' fill='rgba(50,35,20,0.04)'/></svg>");
-  background-size: 6px 6px;
-}
-.world-platform::before {
-  /* Soft outer vignette for depth without darkening the scene. */
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(ellipse at center, rgba(50, 35, 20, 0) 55%, rgba(50, 35, 20, 0.05) 100%);
-  pointer-events: none;
-  z-index: 0;
-}
-.world-platform::after {
-  /* Soft contact shadow under the platform. */
-  content: "";
-  position: absolute;
-  left: 8%;
-  right: 8%;
-  bottom: 24px;
-  height: 28px;
-  background: radial-gradient(ellipse at center, rgba(50, 35, 20, 0.1) 0%, rgba(50, 35, 20, 0) 70%);
-  filter: blur(8px);
-  pointer-events: none;
-  z-index: -1;
-}
-
-/* Calm pulse for the focal reminder badge — softer than the original. */
-@keyframes badgePulse {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.08); }
 }
