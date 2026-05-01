@@ -104,6 +104,8 @@ export default function AppShell() {
           <button
             type="button"
             onClick={() => setModalOpen(true)}
+            title="Add to World"
+            aria-label="Add to World"
             className="inline-flex items-center gap-2 rounded-full bg-primary px-[18px] py-2.5 text-sm font-semibold text-white shadow-primary transition hover:-translate-y-0.5"
           >
             <span className="text-base font-semibold leading-none">+</span> Add to World
@@ -131,8 +133,7 @@ export default function AppShell() {
             className="h-[7px] w-[7px] flex-none animate-ping rounded-full bg-primary"
           />
           <span>
-            Click <strong className="font-semibold text-ink">+ Add to World</strong> to
-            place Noah&apos;s Bike, or tap any item to see details.
+            Tap an object to see receipts, reminders and warranty details.
           </span>
         </div>
       </main>

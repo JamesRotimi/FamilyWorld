@@ -59,10 +59,10 @@ export default function IsometricObject({
         {item.name}
       </span>
 
-      {/* Coming-soon pill */}
+      {/* Coming-soon hint — subtle by default, surfaces on hover/focus */}
       {inactive && (
-        <span className="absolute left-1/2 top-[-6px] z-[2] -translate-x-1/2 whitespace-nowrap rounded-full border border-line bg-surface px-2 py-[3px] text-[9px] font-semibold uppercase tracking-[0.06em] text-ink-soft shadow-[0_2px_6px_rgba(50,35,20,0.06)]">
-          Coming soon
+        <span className="pointer-events-none absolute left-1/2 top-[-6px] z-[2] -translate-x-1/2 whitespace-nowrap rounded-full border border-line/80 bg-surface/85 px-2 py-[2px] text-[9px] font-medium uppercase tracking-[0.06em] text-ink-mute opacity-0 shadow-[0_2px_6px_rgba(50,35,20,0.04)] transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">
+          Soon
         </span>
       )}
 
