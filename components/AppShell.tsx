@@ -6,7 +6,7 @@ import {
   DEFAULT_RECENT_ID,
   type FamilyItem,
 } from "@/data/familyWorldMock";
-import SearchAndRecent from "./SearchAndRecent";
+import InfoPanel from "./InfoPanel";
 import FamilyWorld from "./FamilyWorld";
 import ObjectDetailDrawer from "./ObjectDetailDrawer";
 import AddItemModal from "./AddItemModal";
@@ -128,28 +128,32 @@ export default function AppShell() {
         </div>
       </header>
 
-      <SearchAndRecent items={items} recentItem={recentItem} onSelect={handleSelect} />
-
-      <main className="relative min-h-[calc(100vh-90px)] overflow-hidden px-6 pb-20">
-        <FamilyWorld
-          items={items}
-          selectedId={selectedId}
-          spawningId={spawningId}
-          onSelect={handleSelect}
-        />
-
-        <div
-          className={`relative z-[2] mx-auto mt-6 flex max-w-[520px] items-center justify-center gap-2.5 rounded-full border border-line bg-surface px-4 py-2.5 text-[13px] font-medium text-ink-soft shadow-[0_1px_2px_rgba(50,35,20,0.03)] transition duration-300 ${
-            hintGone ? "pointer-events-none translate-y-2 opacity-0" : ""
-          }`}
-        >
-          <span
-            aria-hidden
-            className="h-[7px] w-[7px] flex-none animate-ping rounded-full bg-primary"
+      <main className="relative min-h-[calc(100vh-90px)] px-6 pb-20 max-md:px-4 lg:px-7">
+        <div className="mx-auto flex max-w-[1240px] flex-col gap-6 lg:flex-row lg:items-start">
+          <InfoPanel
+            items={items}
+            recentItem={recentItem}
+            onSelect={handleSelect}
           />
-          <span>
-            Tap an object to see receipts, reminders and warranty details.
-          </span>
+          <div className="min-w-0 flex-1">
+            <FamilyWorld
+              items={items}
+              selectedId={selectedId}
+              spawningId={spawningId}
+              onSelect={handleSelect}
+            />
+            <div
+              className={`relative z-[2] mx-auto mt-5 flex max-w-[520px] items-center justify-center gap-2.5 rounded-full border border-line bg-surface px-4 py-2 text-[12.5px] font-medium text-ink-soft shadow-[0_1px_2px_rgba(50,35,20,0.03)] transition duration-300 ${
+                hintGone ? "pointer-events-none translate-y-2 opacity-0" : ""
+              }`}
+            >
+              <span
+                aria-hidden
+                className="h-[7px] w-[7px] flex-none animate-ping rounded-full bg-primary"
+              />
+              <span>Tap an object to see receipts, reminders and warranty details.</span>
+            </div>
+          </div>
         </div>
       </main>
 

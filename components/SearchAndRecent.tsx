@@ -19,6 +19,10 @@ function reminderSummary(item: FamilyItem): string {
   return item.type;
 }
 
+/**
+ * Stacks vertically — designed to live inside the editorial info panel.
+ * Search dropdown stays absolutely positioned to overlap whatever sits below.
+ */
 export default function SearchAndRecent({ items, recentItem, onSelect }: Props) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -32,7 +36,8 @@ export default function SearchAndRecent({ items, recentItem, onSelect }: Props) 
         (i) =>
           i.name.toLowerCase().includes(q) ||
           i.type.toLowerCase().includes(q) ||
-          (i.notes ?? "").toLowerCase().includes(q),
+          (i.notes ?? "").toLowerCase().includes(q) ||
+          (i.preview ?? "").toLowerCase().includes(q),
       )
       .slice(0, 6);
   }, [items, query]);
@@ -46,14 +51,11 @@ export default function SearchAndRecent({ items, recentItem, onSelect }: Props) 
   }, []);
 
   return (
-    <section
-      aria-label="Find items"
-      className="relative z-[6] flex flex-wrap items-center gap-3.5 px-7 pb-3.5 max-md:px-4 max-md:pb-3"
-    >
-      <div ref={wrapRef} className="relative min-w-[220px] max-w-[440px] flex-1">
+    <div className="flex flex-col gap-3.5">
+      <div ref={wrapRef} className="relative">
         <span
           aria-hidden
-          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg text-ink-mute"
+          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-ink-mute"
         >
           ⌕
         </span>
@@ -68,13 +70,13 @@ export default function SearchAndRecent({ items, recentItem, onSelect }: Props) 
             setOpen(true);
           }}
           onFocus={() => query.trim() && setOpen(true)}
-          className="w-full rounded-full border border-line bg-surface py-2.5 pl-[42px] pr-4 text-sm font-medium text-ink outline-none transition placeholder:font-medium placeholder:text-ink-mute focus:border-primary-soft focus:bg-white focus:shadow-[0_0_0_4px_rgba(224,122,79,0.12)]"
+          className="w-full rounded-full border border-line bg-white py-2.5 pl-10 pr-3.5 text-[13.5px] font-medium text-ink outline-none transition placeholder:font-medium placeholder:text-ink-mute focus:border-primary-soft focus:shadow-[0_0_0_4px_rgba(224,122,79,0.12)]"
         />
 
         {open && query.trim() && (
-          <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 max-h-80 overflow-y-auto rounded-2xl border border-line bg-surface p-1.5 shadow-pop">
+          <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 max-h-72 overflow-y-auto rounded-2xl border border-line bg-surface p-1.5 shadow-pop">
             {matches.length === 0 ? (
-              <div className="p-3.5 text-center text-[13px] text-ink-soft">
+              <div className="p-3 text-center text-[13px] text-ink-soft">
                 No items match &ldquo;{query}&rdquo;.
               </div>
             ) : (
@@ -93,10 +95,10 @@ export default function SearchAndRecent({ items, recentItem, onSelect }: Props) 
                     {m.glyph}
                   </span>
                   <span className="flex min-w-0 flex-col gap-0.5">
-                    <span className="text-sm font-semibold text-ink">{m.name}</span>
+                    <span className="text-[13.5px] font-semibold text-ink">{m.name}</span>
                     <span className="text-[11px] font-medium text-ink-soft">
                       {m.type}
-                      {m.status === "coming-soon" && " · Coming soon"}
+                      {m.status === "coming-soon" && " · soon"}
                     </span>
                   </span>
                 </button>
@@ -106,32 +108,30 @@ export default function SearchAndRecent({ items, recentItem, onSelect }: Props) 
         )}
       </div>
 
-      <div className="flex min-w-0 flex-1 basis-[240px] items-center gap-2.5">
-        <span className="flex-none text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-mute">
-          Recent
-        </span>
-        <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto py-0.5">
-          {recentItem && (
-            <button
-              type="button"
-              onClick={() => onSelect(recentItem.id)}
-              className="flex flex-none items-center gap-2.5 rounded-full border border-line bg-surface py-1.5 pl-1.5 pr-3.5 transition hover:-translate-y-0.5 hover:border-primary-soft hover:bg-white"
-            >
-              <span className="flex h-7 w-7 flex-none items-center justify-center rounded-[9px] border border-line bg-surface-soft text-base">
-                {recentItem.glyph}
+      {recentItem && (
+        <div className="flex items-center gap-2.5">
+          <span className="flex-none text-[10px] font-semibold uppercase tracking-[0.1em] text-ink-mute">
+            Recent
+          </span>
+          <button
+            type="button"
+            onClick={() => onSelect(recentItem.id)}
+            className="flex min-w-0 flex-1 items-center gap-2.5 rounded-full border border-line bg-white py-1.5 pl-1.5 pr-3 transition hover:-translate-y-0.5 hover:border-primary-soft"
+          >
+            <span className="flex h-7 w-7 flex-none items-center justify-center rounded-[9px] border border-line bg-surface-soft text-base">
+              {recentItem.glyph}
+            </span>
+            <span className="flex min-w-0 flex-col text-left leading-tight">
+              <span className="truncate text-[12.5px] font-semibold text-ink">
+                {recentItem.name}
               </span>
-              <span className="flex flex-col text-left leading-tight">
-                <span className="text-[13px] font-semibold text-ink">
-                  {recentItem.name}
-                </span>
-                <span className="mt-px text-[11px] font-medium text-ink-soft">
-                  {reminderSummary(recentItem)}
-                </span>
+              <span className="mt-px truncate text-[10.5px] font-medium text-ink-soft">
+                {reminderSummary(recentItem)}
               </span>
-            </button>
-          )}
+            </span>
+          </button>
         </div>
-      </div>
-    </section>
+      )}
+    </div>
   );
 }
